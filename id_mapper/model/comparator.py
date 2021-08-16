@@ -122,6 +122,6 @@ class Comparator(nn.Module):
 
         scores = self.linear(kernels)
         scores = scores.view(len(keys), len(queries))
-        scores = torch.softmax(scores, dim=1)
+        scores = torch.sigmoid(scores)
 
         return scores
