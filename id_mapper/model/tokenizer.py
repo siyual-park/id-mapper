@@ -77,7 +77,7 @@ class Tokenizer(nn.Module):
 
         self.linear = nn.Linear(self.conv_output_size, 1)
 
-    def forward(self, images):
+    def forward(self, images: List[Image]):
         images = self.resizes(images)
 
         tensor = self.images_to_tensor(images)
