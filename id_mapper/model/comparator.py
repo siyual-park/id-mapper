@@ -100,7 +100,7 @@ class Comparator(nn.Module):
             d_k=token_size // head_size,
             d_v=token_size // head_size
         )
-        self.linear = nn.Linear(token_size, 1)
+        self.linear = nn.Linear(token_size // head_size * head_size, 1)
 
     def forward(self, keys: List[Image], queries: List[Image]):
         key_tokens = self.tokenizer(keys)
