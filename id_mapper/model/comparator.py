@@ -94,13 +94,13 @@ class Comparator(nn.Module):
             image_size=image_size,
             token_size=token_size
         )
-        self.multi_head_attention = MultiHeadAttention(
+        self.embedding = MultiHeadAttention(
             d_model=token_size,
             n_heads=head_size,
             d_k=token_size // head_size,
             d_v=token_size // head_size
         )
-        self.linear = nn.Linear(token_size // head_size * head_size, 1)
+        self.decode = nn.Linear(token_size // head_size * head_size, 1)
 
     def forward(self, keys: List[Image], queries: List[Image]):
         key_tokens = self.tokenizer(keys)
@@ -110,7 +110,7 @@ class Comparator(nn.Module):
         kernels = []
         for key_token in key_tokens:
             current_key_tokens = key_token.repeat(len(queries), 1)
-            kernel, attention = self.multi_head_attention(
+            kernel, attention = self.embedding(
                 query_tokens,
                 current_key_tokens,
                 value_tokens
@@ -120,7 +120,7 @@ class Comparator(nn.Module):
         kernels = torch.stack(kernels)
         kernels = kernels.view(len(keys) * len(queries), -1)
 
-        scores = self.linear(kernels)
+        scores = self.decode(kernels)
         scores = scores.view(len(keys), len(queries))
         scores = torch.sigmoid(scores)
 
