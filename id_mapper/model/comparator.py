@@ -144,7 +144,7 @@ class Comparator(nn.Module):
     def forward(self, keys: List[Image], queries: List[Image]):
         query_tokens = self.tokenizer(queries)
         key_tokens = self.tokenizer(keys)
-        value_tokens = query_tokens.clone()
+        value_tokens = key_tokens
 
         kernels = self.first_embedding(query_tokens, key_tokens, value_tokens)
         kernels = self.embedding(kernels)
