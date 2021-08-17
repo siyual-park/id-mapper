@@ -69,7 +69,7 @@ class COCO(Dataset):
         self.__annotation_local_zip.parent.mkdir(parents=True, exist_ok=True)
 
         _load(self.__remote, self.__local, self.__local_zip)
-        _load(self.__annotation_remote, self.__local, self.__local_zip)
+        _load(self.__annotation_remote, self.__annotation_local, self.__annotation_local_zip)
 
         self.__coco = coco.COCO(self.__annotation_local.joinpath('instances_' + self.__local.name + '.json'))
 

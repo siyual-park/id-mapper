@@ -203,7 +203,7 @@ if __name__ == '__main__':
         head_size=args.head_size,
         intermediate_size=args.intermediate_size,
         dropout=args.dropout,
-        deep=args.deep
+        self_attention_size=args.deep
     )
 
     trainer = Trainer(
