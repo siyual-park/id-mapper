@@ -5,9 +5,9 @@ from typing import Optional, Tuple
 from urllib import request
 
 import numpy as np
+from PIL.Image import Image
 from pycocotools import coco
 from torch.utils.data import Dataset
-from PIL.Image import Image
 
 
 def _load(remote: str, local: Path, cache: Path) -> None:
@@ -147,7 +147,7 @@ if __name__ == '__main__':
 
     coco = COCO(
         remote='http://images.cocodataset.org/zips/train2017.zip',
-        local=data_path.joinpath('val2017'),
+        local=data_path.joinpath('train2017'),
         annotation_remote='http://images.cocodataset.org/annotations/annotations_trainval2017.zip',
         annotation_local=data_path.joinpath('anotations')
     )
