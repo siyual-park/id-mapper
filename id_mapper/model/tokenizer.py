@@ -24,25 +24,53 @@ class Conv(nn.Module):
             stride=1,
             padding=None,
             groups=1,
-            act=True
+            act=True,
+            dropout=0.0
     ):  # ch_in, ch_out, kernel, stride, padding, groups
         super().__init__()
         self.conv = nn.Conv2d(ch_in, ch_out, kernel, stride, autopad(kernel, padding), groups=groups, bias=False)
         self.bn = nn.BatchNorm2d(ch_out)
         self.act = nn.SiLU() if act is True else (act if isinstance(act, nn.Module) else nn.Identity())
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        return self.act(self.bn(self.conv(x)))
+        return self.dropout(self.act(self.bn(self.conv(x))))
 
     def forward_fuse(self, x):
-        return self.act(self.conv(x))
+        return self.dropout(self.act(self.conv(x)))
+
+
+class C2(nn.Module):
+    # Standard convolution
+    def __init__(
+            self,
+            ch_in,
+            ch_out,
+            pooling_kernel_size=2,
+            pooling_stride=2,
+            dropout=0.0
+    ):
+        super().__init__()
+
+        ch_mid = ch_out // 2
+
+        self.conv1 = Conv(ch_in=ch_in, ch_out=ch_mid, padding="same", dropout=dropout)
+        self.conv2 = Conv(ch_in=ch_mid, ch_out=ch_out - ch_mid, padding="same", dropout=dropout)
+        self.pooling = nn.MaxPool2d(kernel_size=pooling_kernel_size, stride=pooling_stride)
+
+    def forward(self, x):
+        feat_1 = self.conv1(x)
+        feat_2 = self.conv2(feat_1)
+
+        return self.pooling(torch.cat([feat_1, feat_2], dim=1))
 
 
 class Tokenizer(nn.Module):
     def __init__(
             self,
             image_size: int,
-            token_size: int
+            token_size: int,
+            dropout: float = 0.0
     ):
         super(Tokenizer, self).__init__()
 
@@ -54,28 +82,27 @@ class Tokenizer(nn.Module):
         self.image_to_tensor = transforms.ToTensor()
         self.normalize = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 
-        convs = []
+        embedding = []
         pre_channel_size = 3
         for i in range(deep):
             out_channel_size = floor(token_size - ((deep - i - 1) * (token_size - 3) / deep))
 
-            conv = nn.Sequential(
-                Conv(ch_in=pre_channel_size, ch_out=out_channel_size, padding="same"),
-                Conv(ch_in=out_channel_size, ch_out=out_channel_size, padding="same"),
-                nn.MaxPool2d(kernel_size=2, stride=2)
+            c2 = C2(
+                ch_in=pre_channel_size,
+                ch_out=out_channel_size,
+                dropout=dropout
             )
-
-            convs.append(conv)
+            embedding.append(c2)
             pre_channel_size = out_channel_size
 
-        self.conv = nn.Sequential(*convs)
+        self.embedding = nn.Sequential(*embedding)
 
-        sample = self.conv(torch.zeros(1, 3, self.image_size, self.image_size))
+        sample = self.embedding(torch.zeros(1, 3, self.image_size, self.image_size))
         batch, kernel, w, h = sample.size()
 
-        self.conv_output_size = w * h
+        self.embedding_output_size = w * h
 
-        self.linear = nn.Linear(self.conv_output_size, 1)
+        self.linear = nn.Linear(self.embedding_output_size, 1)
 
     def forward(self, images: List[Image]):
         images = self.resizes(images)
@@ -83,7 +110,7 @@ class Tokenizer(nn.Module):
         tensor = self.images_to_tensor(images)
         tensor = self.normalizes(tensor)
 
-        features = self.conv(tensor)
+        features = self.embedding(tensor)
 
         tokens = self.mapping(features)
         tokens = torch.sigmoid(tokens)

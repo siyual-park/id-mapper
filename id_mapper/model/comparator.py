@@ -81,47 +81,148 @@ class MultiHeadAttention(nn.Module):
         return output, attn
 
 
+class FeedForward(nn.Module):
+    def __init__(self, kernel_size: int, dropout: float, intermediate_size: int):
+        super().__init__()
+
+        self.linear1 = nn.Linear(kernel_size, intermediate_size)
+        self.linear2 = nn.Linear(intermediate_size, kernel_size)
+
+        self.activation = nn.GELU()
+        self.dropout = nn.Dropout(dropout)
+        self.norm = nn.LayerNorm(kernel_size)
+
+        self.feed_forward = nn.Sequential(
+            nn.Linear(kernel_size, intermediate_size),
+            nn.GELU(),
+            nn.Linear(intermediate_size, kernel_size),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.LayerNorm(kernel_size)
+        )
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        tensor = self.linear1(inputs)
+        tensor = self.activation(tensor)
+        tensor = self.linear2(tensor)
+        tensor = self.activation(tensor)
+        tensor = self.dropout(tensor)
+        tensor = self.norm(tensor)
+
+        return tensor
+
+
+class SelfAttention(nn.Module):
+    def __init__(self, kernel_size: int, head_size: int, dropout: float, intermediate_size: int):
+        super().__init__()
+        self.attention = MultiHeadAttention(
+            d_model=kernel_size * head_size,
+            n_heads=head_size,
+            d_k=kernel_size,
+            d_v=kernel_size
+        )
+
+        self.feed_forward = FeedForward(
+            kernel_size=kernel_size * head_size,
+            dropout=dropout,
+            intermediate_size=intermediate_size
+        )
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        key_size, query_size, _ = inputs.size()
+
+        outputs = []
+        for input in inputs:
+            output, attention = self.attention(
+                input,
+                input,
+                input
+            )
+            outputs.append(output)
+
+        outputs = torch.stack(outputs)
+        outputs = outputs.view(key_size * query_size, -1)
+
+        outputs = self.feed_forward(outputs)
+        outputs = outputs.view(key_size, query_size, -1)
+
+        return outputs
+
+
 class Comparator(nn.Module):
     def __init__(
             self,
             image_size: int,
             token_size: int,
-            head_size: int
+            head_size: int,
+            intermediate_size: int,
+            dropout: float,
+            self_attention_size: int
     ):
         super().__init__()
 
+        kernel_size = token_size // head_size
+
         self.tokenizer = Tokenizer(
             image_size=image_size,
-            token_size=token_size
+            token_size=token_size,
+            dropout=dropout
         )
-        self.multi_head_attention = MultiHeadAttention(
+
+        self.attention = MultiHeadAttention(
             d_model=token_size,
             n_heads=head_size,
-            d_k=token_size // head_size,
-            d_v=token_size // head_size
+            d_k=kernel_size,
+            d_v=kernel_size
         )
-        self.linear = nn.Linear(token_size // head_size * head_size, 1)
+        self.feed_forward = FeedForward(
+            kernel_size=kernel_size * head_size,
+            dropout=dropout,
+            intermediate_size=intermediate_size
+        )
+
+        self_attentions = []
+        for i in range(self_attention_size):
+            self_attentions.append(SelfAttention(
+                kernel_size=kernel_size,
+                head_size=head_size,
+                dropout=dropout,
+                intermediate_size=intermediate_size
+            ))
+
+        self.self_attentions = nn.Sequential(*self_attentions)
+        self.scores = nn.Linear(kernel_size * head_size, 1)
+        self.self_attention_size = self_attention_size
 
     def forward(self, keys: List[Image], queries: List[Image]):
-        key_tokens = self.tokenizer(keys)
         query_tokens = self.tokenizer(queries)
-        value_tokens = query_tokens.clone()
+        key_tokens = self.tokenizer(keys)
+        value_tokens = key_tokens
 
+        kernels = self.embedding(query_tokens, key_tokens, value_tokens)
+        kernels = self.self_attentions(kernels)
+
+        scores = self.scores(kernels)
+        scores = scores.view(len(keys), len(queries))
+        scores = torch.sigmoid(scores)
+
+        return scores
+
+    def embedding(self, queries, keys, values) -> torch.Tensor:
         kernels = []
-        for key_token in key_tokens:
+        for key_token in keys:
             current_key_tokens = key_token.repeat(len(queries), 1)
-            kernel, attention = self.multi_head_attention(
-                query_tokens,
+            kernel, attention = self.attention(
+                queries,
                 current_key_tokens,
-                value_tokens
+                values
             )
             kernels.append(kernel)
 
         kernels = torch.stack(kernels)
         kernels = kernels.view(len(keys) * len(queries), -1)
 
-        scores = self.linear(kernels)
-        scores = scores.view(len(keys), len(queries))
-        scores = torch.sigmoid(scores)
+        kernels = self.feed_forward(kernels)
+        kernels = kernels.view(len(keys), len(queries), -1)
 
-        return scores
+        return kernels
