@@ -8,6 +8,7 @@ import numpy as np
 from PIL.Image import Image
 from pycocotools import coco
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 
 def _load(remote: str, local: Path, cache: Path) -> None:
@@ -24,7 +25,20 @@ def _load(remote: str, local: Path, cache: Path) -> None:
 
 
 def _download(remote: str, local: Path) -> None:
-    request.urlretrieve(remote, local)
+    def download_progress_hook(progress_bar):
+        last_block = [0]
+
+        def update_to(count=1, block_size=1, total_size=None):
+            if total_size is not None:
+                progress_bar.total = total_size
+            progress_bar.update((count - last_block[0]) * block_size)
+            last_block[0] = count
+
+        return update_to
+
+    with tqdm() as t:
+        hook = download_progress_hook(t)
+        request.urlretrieve(remote, local, reporthook=hook)
 
 
 def _unzip(origin: Path, to: Path) -> None:
