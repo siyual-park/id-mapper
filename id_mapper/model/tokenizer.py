@@ -74,13 +74,13 @@ class Tokenizer(nn.Module):
     ):
         super(Tokenizer, self).__init__()
 
-        deep = floor(log(image_size, 2))
-
         self.image_size = image_size
         self.token_size = token_size
 
         self.image_to_tensor = transforms.ToTensor()
         self.normalize = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+
+        deep = floor(log(image_size, 2))
 
         embedding = []
         pre_channel_size = 3

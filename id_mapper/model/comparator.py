@@ -115,6 +115,7 @@ class FeedForward(nn.Module):
 class SelfAttention(nn.Module):
     def __init__(self, kernel_size: int, head_size: int, dropout: float, intermediate_size: int):
         super().__init__()
+
         self.attention = MultiHeadAttention(
             d_model=kernel_size * head_size,
             n_heads=head_size,
