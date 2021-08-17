@@ -166,7 +166,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--checkpoint', type=str, default='comparator')
 
-    parser.add_argument('--image_size', type=int, default=640)
+    parser.add_argument('--image_size', type=int, default=320)
     parser.add_argument('--token_size', type=int, default=1024)
     parser.add_argument('--head_size', type=int, default=8)
     parser.add_argument('--intermediate_size', type=int, default=1024)
