@@ -92,21 +92,15 @@ class FeedForward(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.norm = nn.LayerNorm(kernel_size)
 
-        self.feed_forward = nn.Sequential(
-            nn.Linear(kernel_size, intermediate_size),
-            nn.GELU(),
-            nn.Linear(intermediate_size, kernel_size),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.LayerNorm(kernel_size)
-        )
-
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         tensor = self.linear1(inputs)
         tensor = self.activation(tensor)
+        tensor = self.dropout(tensor)
+
         tensor = self.linear2(tensor)
         tensor = self.activation(tensor)
         tensor = self.dropout(tensor)
+
         tensor = self.norm(tensor)
 
         return tensor
