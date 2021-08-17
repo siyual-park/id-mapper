@@ -50,23 +50,3 @@ class InstanceImage(Dataset):
         image = Image.open(path).convert('RGB')
 
         return image
-
-
-if __name__ == '__main__':
-    path = Path(os.path.abspath(__file__))
-    root_path = path.parent.parent.parent
-
-    data_path = root_path.joinpath('data')
-
-    coco = COCO(
-        remote='http://images.cocodataset.org/zips/train2017.zip',
-        local=data_path.joinpath('train2017'),
-        annotation_remote='http://images.cocodataset.org/annotations/annotations_trainval2017.zip',
-        annotation_local=data_path.joinpath('anotations')
-    )
-
-    instance_image = InstanceImage(
-        coco=coco,
-        local=data_path.joinpath('instances')
-    )
-
