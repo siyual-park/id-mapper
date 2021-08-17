@@ -117,7 +117,7 @@ class COCO(Dataset):
 
     def load_image(self, image_index) -> Tuple[Image, Tuple[int, int]]:
         image_info = self.__coco.loadImgs(self.__image_ids[image_index])[0]
-        path = self.__local.joinpath(image_info['file_name'])
+        path = self.__local.joinpath(self.__local.name).joinpath(image_info['file_name'])
         image = Image.open(path).convert('RGB')
         return image, (image_info['width'], image_info['height'])
 
