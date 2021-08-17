@@ -3,6 +3,7 @@ from pathlib import Path
 
 from PIL.Image import Image
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from id_mapper.dataset.coco import COCO
 
@@ -30,7 +31,7 @@ class InstanceImage(Dataset):
 
         if not os.path.exists(self.__local):
             counter = 0
-            for image, boxes in self.__coco:
+            for image, boxes in tqdm(self.__coco):
                 for box in boxes:
                     instance_image = image.crop(box)
                     instance_image.save(self.__local.joinpath(f'{counter}.{self.__suffix}', self.__suffix.upper()))
