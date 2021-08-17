@@ -81,14 +81,40 @@ class MultiHeadAttention(nn.Module):
         return output, attn
 
 
+class FeedForward(nn.Module):
+    def __init__(self, kernel_size: int, dropout: float, intermediate_size: int):
+        super().__init__()
+
+        self.linear1 = nn.Linear(kernel_size, intermediate_size)
+        self.linear2 = nn.Linear(intermediate_size, kernel_size)
+
+        self.activation = nn.GELU()
+        self.dropout = nn.Dropout(dropout)
+        self.norm = nn.LayerNorm(kernel_size)
+
+        self.feed_forward = nn.Sequential(
+            nn.Linear(kernel_size, intermediate_size),
+            nn.GELU(),
+            nn.Linear(intermediate_size, kernel_size),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.LayerNorm(kernel_size)
+        )
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        tensor = self.linear1(inputs)
+        tensor = self.activation(tensor)
+        tensor = self.linear2(tensor)
+        tensor = self.activation(tensor)
+        tensor = self.dropout(tensor)
+        tensor = self.norm(tensor)
+
+        return tensor
+
+
 class SelfAttention(nn.Module):
-    def __init__(
-            self,
-            kernel_size: int,
-            head_size: int,
-            dropout: float,
-            intermediate_size: int
-    ):
+    def __init__(self, kernel_size: int, head_size: int, dropout: float, intermediate_size: int):
+        super().__init__()
         self.attention = MultiHeadAttention(
             d_model=kernel_size * head_size,
             n_heads=head_size,
@@ -96,13 +122,10 @@ class SelfAttention(nn.Module):
             d_v=kernel_size
         )
 
-        self.feed_forward = nn.Sequential(
-            nn.Linear(kernel_size * head_size, intermediate_size),
-            nn.GELU(),
-            nn.Linear(intermediate_size, kernel_size * head_size),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.LayerNorm(kernel_size * head_size)
+        self.feed_forward = FeedForward(
+            kernel_size=kernel_size * head_size,
+            dropout=dropout,
+            intermediate_size=intermediate_size
         )
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
@@ -137,6 +160,7 @@ class Comparator(nn.Module):
             self_attention_size: int
     ):
         super().__init__()
+
         kernel_size = token_size // head_size
 
         self.tokenizer = Tokenizer(
@@ -151,13 +175,10 @@ class Comparator(nn.Module):
             d_k=kernel_size,
             d_v=kernel_size
         )
-        self.feed_forward = nn.Sequential(
-            nn.Linear(kernel_size * head_size, intermediate_size),
-            nn.GELU(),
-            nn.Linear(intermediate_size, kernel_size * head_size),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.LayerNorm(kernel_size * head_size)
+        self.feed_forward = FeedForward(
+            kernel_size=kernel_size * head_size,
+            dropout=dropout,
+            intermediate_size=intermediate_size
         )
 
         self_attentions = []
