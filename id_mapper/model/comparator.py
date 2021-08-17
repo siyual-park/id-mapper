@@ -182,9 +182,9 @@ class Comparator(nn.Module):
             outputs = []
             for input in inputs:
                 output, attention = self.attentions[i](
-                    input.copy(),
-                    input.copy(),
-                    input.copy()
+                    input,
+                    input,
+                    input
                 )
                 outputs.append(output)
 
