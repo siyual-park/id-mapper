@@ -153,7 +153,7 @@ if __name__ == '__main__':
         default='http://images.cocodataset.org/zips/val2017.zip',
     )
 
-    parser.add_argument('--annotations', type=str, default='anotations')
+    parser.add_argument('--annotations', type=str, default='annotations')
     parser.add_argument(
         '--annotations_remote',
         type=str,
