@@ -169,6 +169,9 @@ if __name__ == '__main__':
     parser.add_argument('--image_size', type=int, default=640)
     parser.add_argument('--token_size', type=int, default=1024)
     parser.add_argument('--head_size', type=int, default=8)
+    parser.add_argument('--intermediate_size', type=int, default=1024)
+    parser.add_argument('--dropout', type=float, default=0.2)
+    parser.add_argument('--deep', type=int, default=2)
 
     args = parser.parse_args()
 
@@ -197,7 +200,10 @@ if __name__ == '__main__':
     model = Comparator(
         image_size=args.image_size,
         token_size=args.token_size,
-        head_size=args.head_size
+        head_size=args.head_size,
+        intermediate_size=args.intermediate_size,
+        dropout=args.dropout,
+        deep=args.deep
     )
 
     trainer = Trainer(

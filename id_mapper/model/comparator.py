@@ -86,42 +86,112 @@ class Comparator(nn.Module):
             self,
             image_size: int,
             token_size: int,
-            head_size: int
+            head_size: int,
+            intermediate_size: int,
+            dropout: float,
+            deep: int
     ):
         super().__init__()
+        kernel_size = token_size // head_size
 
         self.tokenizer = Tokenizer(
             image_size=image_size,
             token_size=token_size
         )
-        self.embedding = MultiHeadAttention(
+
+        self.first_attention = MultiHeadAttention(
             d_model=token_size,
             n_heads=head_size,
-            d_k=token_size // head_size,
-            d_v=token_size // head_size
+            d_k=kernel_size,
+            d_v=kernel_size
         )
-        self.decode = nn.Linear(token_size // head_size * head_size, 1)
+        self.first_feed_forward = nn.Sequential(
+            nn.Linear(kernel_size * head_size, intermediate_size),
+            nn.GELU(),
+            nn.Linear(intermediate_size, kernel_size * head_size),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.LayerNorm(kernel_size * head_size)
+        )
+
+        self.attentions = []
+        for i in range(deep):
+            self.attentions.append(
+                MultiHeadAttention(
+                    d_model=kernel_size * head_size,
+                    n_heads=head_size,
+                    d_k=kernel_size,
+                    d_v=kernel_size
+                )
+            )
+
+        self.feed_forwards = []
+        for i in range(deep):
+            self.feed_forwards.append(
+                nn.Sequential(
+                    nn.Linear(kernel_size * head_size, intermediate_size),
+                    nn.GELU(),
+                    nn.Linear(intermediate_size, kernel_size * head_size),
+                    nn.GELU(),
+                    nn.Dropout(dropout),
+                    nn.LayerNorm(kernel_size * head_size)
+                )
+            )
+
+        self.scores = nn.Linear(kernel_size * head_size, 1)
+        self.deep = deep
 
     def forward(self, keys: List[Image], queries: List[Image]):
-        key_tokens = self.tokenizer(keys)
         query_tokens = self.tokenizer(queries)
+        key_tokens = self.tokenizer(keys)
         value_tokens = query_tokens.clone()
 
+        kernels = self.first_embedding(query_tokens, key_tokens, value_tokens)
+
+        scores = self.scores(kernels)
+        scores = scores.view(len(keys), len(queries))
+        scores = torch.sigmoid(scores)
+
+        return scores
+
+    def first_embedding(self, queries, keys, values) -> torch.Tensor:
         kernels = []
-        for key_token in key_tokens:
+        for key_token in keys:
             current_key_tokens = key_token.repeat(len(queries), 1)
-            kernel, attention = self.embedding(
-                query_tokens,
+            kernel, attention = self.first_attention(
+                queries,
                 current_key_tokens,
-                value_tokens
+                values
             )
             kernels.append(kernel)
 
         kernels = torch.stack(kernels)
         kernels = kernels.view(len(keys) * len(queries), -1)
 
-        scores = self.decode(kernels)
-        scores = scores.view(len(keys), len(queries))
-        scores = torch.sigmoid(scores)
+        kernels = self.first_feed_forward(kernels)
+        kernels = kernels.view(len(keys), len(queries), -1)
 
-        return scores
+        return kernels
+
+    def embedding(self, inputs: torch.Tensor) -> torch.Tensor:
+        key_size, query_size, _ = inputs.size()
+
+        outputs = inputs
+        for i in range(self.deep):
+            outputs = []
+            for input in inputs:
+                output, attention = self.attentions[i](
+                    input.copy(),
+                    input.copy(),
+                    input.copy()
+                )
+                outputs.append(output)
+
+            outputs = torch.stack(outputs)
+            outputs = outputs.view(key_size * query_size, -1)
+
+            outputs = self.feed_forwards[i](outputs)
+            outputs = outputs.view(key_size, query_size, -1)
+
+        return outputs
+
