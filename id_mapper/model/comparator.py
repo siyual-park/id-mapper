@@ -147,6 +147,7 @@ class Comparator(nn.Module):
         value_tokens = query_tokens.clone()
 
         kernels = self.first_embedding(query_tokens, key_tokens, value_tokens)
+        kernels = self.embedding(kernels)
 
         scores = self.scores(kernels)
         scores = scores.view(len(keys), len(queries))
