@@ -88,7 +88,7 @@ class ComparatorDataloader:
         if os.path.exists(self.__mapping_images):
             for entry in self.__mapping_images.iterdir():
                 try:
-                    current = int(entry.name.removesuffix(entry.suffix)):
+                    current = int(entry.name.removesuffix(entry.suffix))
                     last = max(last, current)
                 except Exception:
                     pass
@@ -96,9 +96,8 @@ class ComparatorDataloader:
         self.__mapping_images.mkdir(parents=True, exist_ok=True)
         if last != len(self.__dataset) - 1:
             print(f'Generate mapping images')
-            for i, image in enumerate(tqdm(self.__dataset)):
-                if i <= last:
-                    continue
+            for i in tqdm(range(last + 1, len(self.__dataset))):
+                image = self.__dataset[i]
                 mapping_image = _random_transform(image, self.__processing_rate)
                 mapping_image.save(self.__mapping_images.joinpath(f'{i}.{self.__suffix}'), self.__suffix.upper())
 
