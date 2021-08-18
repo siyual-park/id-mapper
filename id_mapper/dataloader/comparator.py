@@ -4,7 +4,7 @@ from random import shuffle, random, randint
 
 import torch
 from PIL import ImageFilter
-from PIL.Image import Image
+from PIL import Image
 from tqdm import tqdm
 
 from id_mapper.dataset.instance import InstanceImage
@@ -15,7 +15,7 @@ def _chunks(l, n):
     return [l[i:i + n] for i in range(0, len(l), n)]
 
 
-def _random_transform(image: Image, rate: float) -> Image:
+def _random_transform(image: Image.Image, rate: float) -> Image.Image:
     current_rate = random()
     if current_rate <= rate:
         image = __random_rotate(image)
@@ -35,12 +35,12 @@ def _random_transform(image: Image, rate: float) -> Image:
     return image
 
 
-def __random_rotate(image: Image) -> Image:
+def __random_rotate(image: Image.Image) -> Image.Image:
     angle = randint(-5, 5)
     return image.rotate(angle)
 
 
-def __random_crop(image: Image) -> Image:
+def __random_crop(image: Image.Image) -> Image.Image:
     (w, h) = image.size
 
     x1 = randint(0, w // 10)
@@ -54,7 +54,7 @@ def __random_crop(image: Image) -> Image:
     return image
 
 
-def __random_resize(image: Image) -> Image:
+def __random_resize(image: Image.Image) -> Image.Image:
     (w, h) = image.size
 
     w = randint(w - w // 10, w + w // 10)
@@ -63,7 +63,7 @@ def __random_resize(image: Image) -> Image:
     return image.resize((w, h))
 
 
-def __noise(image: Image) -> Image:
+def __noise(image: Image.Image) -> Image.Image:
     return image.filter(ImageFilter.MedianFilter)
 
 
