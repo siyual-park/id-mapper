@@ -35,7 +35,7 @@ class InstanceImage(Dataset):
             for image, boxes in tqdm(self.__coco):
                 for box in boxes:
                     instance_image = image.crop(box)
-                    instance_image.save(self.local.joinpath(f'{counter}.{self.__suffix}'), self.__suffix.upper())
+                    instance_image.save(self.local.joinpath(f'{counter}.{self.__suffix}'))
                     counter += 1
 
         self.__data_size = 0

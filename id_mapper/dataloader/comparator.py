@@ -99,7 +99,7 @@ class ComparatorDataloader:
             for i in tqdm(range(last + 1, len(self.__dataset))):
                 image = self.__dataset[i]
                 mapping_image = _random_transform(image, self.__processing_rate)
-                mapping_image.save(self.__mapping_images.joinpath(f'{i}.{self.__suffix}'), self.__suffix.upper())
+                mapping_image.save(self.__mapping_images.joinpath(f'{i}.{self.__suffix}'))
 
     def __len__(self):
         return len(self.__data_ids)
