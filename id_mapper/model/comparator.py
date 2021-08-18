@@ -186,7 +186,7 @@ class Comparator(nn.Module):
             ))
 
         self.self_attentions = nn.Sequential(*self_attentions)
-        self.scores = nn.Linear(kernel_size * head_size, 1)
+        self.logits = nn.Linear(kernel_size * head_size, 1)
         self.self_attention_size = self_attention_size
 
     def forward(self, keys: List[Image], queries: List[Image]):
@@ -196,11 +196,10 @@ class Comparator(nn.Module):
         kernels = self.embedding(query_tokens, key_tokens)
         kernels = self.self_attentions(kernels)
 
-        scores = self.scores(kernels)
-        scores = scores.view(len(keys), len(queries))
-        scores = torch.sigmoid(scores)
+        logits = self.logits(kernels)
+        logits = logits.view(len(keys), len(queries))
 
-        return scores
+        return logits
 
     def embedding(self, queries, keys) -> torch.Tensor:
         kernels = []

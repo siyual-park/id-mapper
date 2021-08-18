@@ -46,7 +46,7 @@ class Trainer(trainer.Trainer):
             checkpoint=checkpoint,
             model=model,
             optimizer=optimizer,
-            criterion=nn.BCELoss()
+            criterion=nn.BCEWithLogitsLoss(pos_weight=torch.tensor([batch_size] * batch_size))
         )
 
         self.__train_data_loader = train_data_loader

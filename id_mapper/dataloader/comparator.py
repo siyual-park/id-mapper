@@ -93,7 +93,7 @@ class ComparatorDataloader:
         keys_size = len(keys)
 
         origin_queries = [_random_transform(image, self.__processing_rate) for image in keys]
-        queries = sample(origin_queries, k=randint(keys_size - keys_size // 10, keys_size))
+        queries = origin_queries.copy()
         shuffle(queries)
 
         labels = []
