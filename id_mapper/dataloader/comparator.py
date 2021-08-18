@@ -88,7 +88,7 @@ class ComparatorDataloader:
             self.__mapping_images.mkdir(parents=True, exist_ok=True)
 
             print(f'Generate mapping images')
-            for i, image in tqdm(enumerate(self.__dataset)):
+            for i, image in enumerate(tqdm(self.__dataset)):
                 mapping_image = _random_transform(image, self.__processing_rate)
                 mapping_image.save(self.__mapping_images.joinpath(f'{i}.{self.__suffix}'), self.__suffix.upper())
 
