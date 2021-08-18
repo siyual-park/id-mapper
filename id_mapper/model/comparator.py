@@ -192,9 +192,8 @@ class Comparator(nn.Module):
     def forward(self, keys: List[Image], queries: List[Image]):
         query_tokens = self.tokenizer(queries)
         key_tokens = self.tokenizer(keys)
-        value_tokens = key_tokens
 
-        kernels = self.embedding(query_tokens, key_tokens, value_tokens)
+        kernels = self.embedding(query_tokens, key_tokens)
         kernels = self.self_attentions(kernels)
 
         scores = self.scores(kernels)
@@ -203,14 +202,14 @@ class Comparator(nn.Module):
 
         return scores
 
-    def embedding(self, queries, keys, values) -> torch.Tensor:
+    def embedding(self, queries, keys) -> torch.Tensor:
         kernels = []
         for key_token in keys:
             current_key_tokens = key_token.repeat(len(queries), 1)
             kernel, attention = self.attention(
                 queries,
                 current_key_tokens,
-                values
+                current_key_tokens
             )
             kernels.append(kernel)
 
