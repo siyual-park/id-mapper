@@ -84,11 +84,21 @@ class ComparatorDataloader:
 
         self.__data_ids = _chunks(list(range(len(self.__dataset))), self.__batch_size)
 
-        if not os.path.exists(self.__mapping_images):
-            self.__mapping_images.mkdir(parents=True, exist_ok=True)
+        last = -1
+        if os.path.exists(self.__mapping_images):
+            for entry in self.__mapping_images.iterdir():
+                try:
+                    current = int(entry.name.removesuffix(entry.suffix)):
+                    last = max(last, current)
+                except Exception:
+                    pass
 
+        self.__mapping_images.mkdir(parents=True, exist_ok=True)
+        if last != len(self.__dataset) - 1:
             print(f'Generate mapping images')
             for i, image in enumerate(tqdm(self.__dataset)):
+                if i <= last:
+                    continue
                 mapping_image = _random_transform(image, self.__processing_rate)
                 mapping_image.save(self.__mapping_images.joinpath(f'{i}.{self.__suffix}'), self.__suffix.upper())
 
