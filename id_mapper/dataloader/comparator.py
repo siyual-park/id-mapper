@@ -1,8 +1,11 @@
-from random import shuffle, random, randint, sample
+import os
+from pathlib import Path
+from random import shuffle, random, randint
 
 import torch
-from PIL.Image import Image
 from PIL import ImageFilter
+from PIL.Image import Image
+from tqdm import tqdm
 
 from id_mapper.dataset.instance import InstanceImage
 
@@ -68,20 +71,26 @@ class ComparatorDataloader:
     def __init__(
             self,
             dataset: InstanceImage,
+            mapping_images: str or Path,
             processing_rate: float,
             batch_size: int
     ):
         self.__dataset = dataset
+        self.__mapping_images = Path(mapping_images)
         self.__batch_size = batch_size
         self.__processing_rate = processing_rate
 
+        self.__suffix = 'png'
+
         self.__data_ids = _chunks(list(range(len(self.__dataset))), self.__batch_size)
 
-    def shuffle(self):
-        data_ids = list(range(len(self.__dataset)))
-        shuffle(data_ids)
+        if not os.path.exists(self.__mapping_images):
+            self.__mapping_images.mkdir(parents=True, exist_ok=True)
 
-        self.__data_ids = _chunks(data_ids, self.__batch_size)
+            print(f'Generate mapping images')
+            for i, image in tqdm(enumerate(self.__dataset)):
+                mapping_image = _random_transform(image, self.__processing_rate)
+                mapping_image.save(self.__mapping_images.joinpath(f'{i}.{self.__suffix}'), self.__suffix.upper())
 
     def __len__(self):
         return len(self.__data_ids)
@@ -90,14 +99,12 @@ class ComparatorDataloader:
         ids = self.__data_ids[idx]
         keys = [self.__dataset[id] for id in ids]
 
-        keys_size = len(keys)
-
-        origin_queries = [_random_transform(image, self.__processing_rate) for image in keys]
-        queries = origin_queries.copy()
+        mapping_images = [self.__load_mapping_image(id) for id in ids]
+        queries = mapping_images.copy()
         shuffle(queries)
 
         labels = []
-        for origin in origin_queries:
+        for origin in mapping_images:
             label = []
             for image in queries:
                 if origin == image:
@@ -109,3 +116,15 @@ class ComparatorDataloader:
         labels = torch.tensor(labels)
 
         return keys, queries, labels
+
+    def shuffle(self):
+        data_ids = list(range(len(self.__dataset)))
+        shuffle(data_ids)
+
+        self.__data_ids = _chunks(data_ids, self.__batch_size)
+
+    def __load_mapping_image(self, id):
+        path = self.__mapping_images.joinpath(f'{id}.{self.__suffix}')
+        image = Image.open(path).convert('RGB')
+
+        return image

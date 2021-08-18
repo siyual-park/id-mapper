@@ -31,13 +31,18 @@ class Trainer(trainer.Trainer):
         optimizer = RAdam(model.parameters(), lr=lr)
         optimizer = Lookahead(optimizer, k=5, alpha=0.5)
 
+        def mapping_images(path: Path) -> Path:
+            return path.parent.joinpath(f'{path.name}_mapping{path.suffix}')
+
         train_data_loader = ComparatorDataloader(
             dataset=train_dataset,
+            mapping_images=mapping_images(train_dataset.local),
             processing_rate=processing_rate,
             batch_size=batch_size
         )
         val_data_loader = ComparatorDataloader(
             dataset=val_dataset,
+            mapping_images=mapping_images(val_dataset.local),
             processing_rate=processing_rate,
             batch_size=batch_size
         )
