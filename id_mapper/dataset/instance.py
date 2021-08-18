@@ -1,12 +1,15 @@
 import os
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, PngImagePlugin
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from id_mapper.dataset.coco import COCO
 
+
+LARGE_ENOUGH_NUMBER = 100
+PngImagePlugin.MAX_TEXT_CHUNK = LARGE_ENOUGH_NUMBER * (1024**2)
 
 def _represents_int(s):
     try:
