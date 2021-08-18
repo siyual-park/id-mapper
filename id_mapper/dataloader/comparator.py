@@ -80,7 +80,7 @@ class ComparatorDataloader:
         self.__batch_size = batch_size
         self.__processing_rate = processing_rate
 
-        self.__suffix = 'png'
+        self.__suffix = 'jpg'
 
         self.__data_ids = _chunks(list(range(len(self.__dataset))), self.__batch_size)
 

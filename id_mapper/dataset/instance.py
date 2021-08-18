@@ -8,9 +8,6 @@ from tqdm import tqdm
 from id_mapper.dataset.coco import COCO
 
 
-LARGE_ENOUGH_NUMBER = 100
-PngImagePlugin.MAX_TEXT_CHUNK = LARGE_ENOUGH_NUMBER * (1024**2)
-
 def _represents_int(s):
     try:
         int(s)
@@ -28,7 +25,7 @@ class InstanceImage(Dataset):
         self.local = Path(local)
         self.__coco = coco
 
-        self.__suffix = 'png'
+        self.__suffix = 'jpg'
 
         if not os.path.exists(self.local):
             self.local.mkdir(parents=True, exist_ok=True)
