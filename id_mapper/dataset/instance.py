@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from PIL.Image import Image
+from PIL import Image
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
@@ -25,21 +25,22 @@ class InstanceImage(Dataset):
         self.__local = Path(local)
         self.__coco = coco
 
-        self.__local.mkdir(parents=True, exist_ok=True)
-
         self.__suffix = 'png'
 
         if not os.path.exists(self.__local):
+            self.__local.mkdir(parents=True, exist_ok=True)
+
+            print(f'Generate dataset')
             counter = 0
             for image, boxes in tqdm(self.__coco):
                 for box in boxes:
                     instance_image = image.crop(box)
-                    instance_image.save(self.__local.joinpath(f'{counter}.{self.__suffix}', self.__suffix.upper()))
+                    instance_image.save(self.__local.joinpath(f'{counter}.{self.__suffix}'), self.__suffix.upper())
                     counter += 1
 
         self.__data_size = 0
         for entry in self.__local.iterdir():
-            if entry.suffix == self.__suffix and _represents_int(entry.name):
+            if entry.suffix == f'.{self.__suffix}' and _represents_int(entry.name.removesuffix(entry.suffix)):
                 self.__data_size += 1
 
     def __len__(self):

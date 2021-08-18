@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 from urllib import request
 
 import numpy as np
-from PIL.Image import Image
+from PIL import Image
 from pycocotools import coco
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -119,7 +119,7 @@ class COCO(Dataset):
 
         return image, boxes
 
-    def load_image(self, image_index) -> Tuple[Image, Tuple[int, int]]:
+    def load_image(self, image_index) -> Tuple[Image.Image, Tuple[int, int]]:
         image_info = self.__coco.loadImgs(self.__image_ids[image_index])[0]
         path = self.__local.joinpath(self.__local.name).joinpath(image_info['file_name'])
         image = Image.open(path).convert('RGB')

@@ -3,45 +3,18 @@ import asyncio
 import math
 import os
 from pathlib import Path
-from random import sample, randint, shuffle
 from time import time
-from typing import List, Tuple
 
 import torch
-from PIL.Image import Image
 from torch import nn
-from torch.utils.data import DataLoader
 
+from id_mapper.dataloader.comparator import ComparatorDataloader
 from id_mapper.dataset.coco import COCO
 from id_mapper.dataset.instance import InstanceImage
-from id_mapper.image.filter import random_transform
 from id_mapper.model.comparator import Comparator
 from id_mapper.optimizer.lookahead import Lookahead
 from id_mapper.optimizer.radam import RAdam
 from id_mapper.train import trainer
-
-
-def _queries(images: List[Image]) -> Tuple[List[Image], torch.Tensor]:
-    images_size = len(images)
-    random_rate = 0.15
-
-    origin_queries = [random_transform(image, random_rate) for image in images]
-    queries = sample(origin_queries, k=randint(images_size - images_size // 10, images_size))
-    shuffle(queries)
-
-    labels = []
-    for origin in origin_queries:
-        label = []
-        for image in queries:
-            if origin == image:
-                label.append(1.0)
-            else:
-                labels.append(0.0)
-        labels.append(label)
-
-    labels = torch.tensor(labels)
-
-    return queries, labels
 
 
 class Trainer(trainer.Trainer):
@@ -51,11 +24,23 @@ class Trainer(trainer.Trainer):
             checkpoint: str or Path,
             train_dataset: InstanceImage,
             val_dataset: InstanceImage,
-            lr: float,
-            batch_size: int
+            processing_rate: float,
+            batch_size: int,
+            lr: float
     ):
         optimizer = RAdam(model.parameters(), lr=lr)
         optimizer = Lookahead(optimizer, k=5, alpha=0.5)
+
+        train_data_loader = ComparatorDataloader(
+            dataset=train_dataset,
+            processing_rate=processing_rate,
+            batch_size=batch_size
+        )
+        val_data_loader = ComparatorDataloader(
+            dataset=val_dataset,
+            processing_rate=processing_rate,
+            batch_size=batch_size
+        )
 
         super().__init__(
             checkpoint=checkpoint,
@@ -64,19 +49,19 @@ class Trainer(trainer.Trainer):
             criterion=nn.BCELoss()
         )
 
-        self.__train_data_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        self.__val_data_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+        self.__train_data_loader = train_data_loader
+        self.__val_data_loader = val_data_loader
 
     async def __evaluate(self) -> float:
+        self.__val_data_loader.shuffle()
+
         self.__model.eval()
 
         total_loss = 0.0
         with torch.no_grad():
-            for images in self.__val_data_loader:
-                queries, labels = _queries(images)
-
+            for keys, queries, labels in self.__val_data_loader:
                 result = self.__model(
-                    keys=images,
+                    keys=keys,
                     queries=queries
                 )
 
@@ -88,6 +73,8 @@ class Trainer(trainer.Trainer):
         return total_loss / len(self.__val_data_loader)
 
     async def __train(self) -> None:
+        self.__train_data_loader.shuffle()
+
         self.__model.train()
         total_loss = 0.0
         start_time = time()
@@ -95,13 +82,12 @@ class Trainer(trainer.Trainer):
         data_size = len(self.__train_data_loader)
         log_interval = int(data_size / 100)
 
-        self.__optimizer.zero_grad()
         train_data = enumerate(self.__train_data_loader, 0)
-        for i, images in train_data:
-            queries, labels = _queries(images)
+        for i, (keys, queries, labels) in train_data:
+            self.__optimizer.zero_grad()
 
             result = self.__model(
-                keys=images,
+                keys=keys,
                 queries=queries
             )
 
@@ -111,6 +97,8 @@ class Trainer(trainer.Trainer):
             loss.backward()
 
             total_loss += loss.item()
+
+            self.__optimizer.step()
 
             if i % log_interval == 0 and i > 0:
                 cur_loss = total_loss / log_interval
@@ -162,7 +150,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--lr', type=float, default=5e-5)
-    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--batch_size', type=int, default=16)
 
     parser.add_argument('--checkpoint', type=str, default='comparator')
 
@@ -171,7 +159,8 @@ if __name__ == '__main__':
     parser.add_argument('--head_size', type=int, default=8)
     parser.add_argument('--intermediate_size', type=int, default=1024)
     parser.add_argument('--dropout', type=float, default=0.2)
-    parser.add_argument('--deep', type=int, default=2)
+    parser.add_argument('--self_attention_size', type=int, default=2)
+    parser.add_argument('--processing_rate', type=float, default=0.2)
 
     args = parser.parse_args()
 
@@ -203,7 +192,7 @@ if __name__ == '__main__':
         head_size=args.head_size,
         intermediate_size=args.intermediate_size,
         dropout=args.dropout,
-        self_attention_size=args.deep
+        self_attention_size=args.self_attention_size
     )
 
     trainer = Trainer(
@@ -211,8 +200,9 @@ if __name__ == '__main__':
         checkpoint=args.checkpoint,
         train_dataset=train_instance_image,
         val_dataset=val_instance_image,
-        lr=args.lr,
-        batch_size=args.batch_size
+        processing_rate=args.processing_rate,
+        batch_size=args.batch_size,
+        lr=args.lr
     )
     loop = asyncio.get_event_loop()
     loop.run_until_complete(trainer.run(epochs=args.epochs))
