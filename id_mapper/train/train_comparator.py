@@ -7,6 +7,7 @@ from time import time
 
 import torch
 from torch import nn
+from tqdm import tqdm
 
 from id_mapper.dataloader.comparator import ComparatorDataloader
 from id_mapper.dataset.coco import COCO
@@ -82,12 +83,11 @@ class Trainer(trainer.Trainer):
 
         self.__model.train()
         total_loss = 0.0
-        start_time = time()
 
         data_size = len(self.__train_data_loader)
         log_interval = int(data_size / 100)
 
-        train_data = enumerate(self.__train_data_loader, 0)
+        train_data = tqdm(enumerate(self.__train_data_loader, 0))
         for i, (keys, queries, labels) in train_data:
             self.__optimizer.zero_grad()
 
@@ -105,22 +105,11 @@ class Trainer(trainer.Trainer):
 
             self.__optimizer.step()
 
-            if i % log_interval == 0 and i > 0:
-                cur_loss = total_loss / log_interval
-                end_time = time()
-                elapsed = end_time - start_time
-
-                self.__log(
-                    '| {:3d} epoch | {:5d}/{:5d} batches | {:5.2f} ms/batch | {:5.2f} loss | {:8.2f} ppl |'.format(
-                        self.__epoch, i, data_size,
-                        elapsed * 1000 / log_interval,
-                        cur_loss,
-                        math.exp(cur_loss)
-                    )
-                )
-
-                start_time = time()
-                total_loss = 0.0
+            train_data.set_description('{:3d} epoch, {:5.2f} loss, {:8.2f} ppl'.format(
+                    self.__epoch,
+                    cur_loss,
+                    math.exp(cur_loss)
+                ))
 
 
 if __name__ == '__main__':
