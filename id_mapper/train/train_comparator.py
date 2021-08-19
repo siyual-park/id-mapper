@@ -202,7 +202,7 @@ if __name__ == '__main__':
 
     trainer = Trainer(
         model=model,
-        checkpoint=args.checkpoint,
+        checkpoint=checkpoint_path.joinpath(args.checkpoint),
         train_dataset=train_instance_image,
         val_dataset=val_instance_image,
         processing_rate=args.processing_rate,
