@@ -87,8 +87,8 @@ class Trainer(trainer.Trainer):
         data_size = len(self.__train_data_loader)
         log_interval = int(data_size / 100)
 
-        train_data = tqdm(enumerate(self.__train_data_loader, 0))
-        for i, (keys, queries, labels) in train_data:
+        train_data = tqdm(self.__train_data_loader, 0)
+        for i, (keys, queries, labels) in enumerate(train_data):
             self.__optimizer.zero_grad()
 
             result = self.__model(
