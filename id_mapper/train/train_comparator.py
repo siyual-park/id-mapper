@@ -105,11 +105,12 @@ class Trainer(trainer.Trainer):
 
             self.__optimizer.step()
 
+            cur_loss = total_loss / (i + 1)
             train_data.set_description('{:3d} epoch, {:5.2f} loss, {:8.2f} ppl'.format(
-                    self.__epoch,
-                    cur_loss,
-                    math.exp(cur_loss)
-                ))
+                self.__epoch,
+                cur_loss,
+                math.exp(cur_loss)
+            ))
 
 
 if __name__ == '__main__':
