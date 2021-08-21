@@ -152,7 +152,7 @@ if __name__ == '__main__':
     parser.add_argument('--intermediate_size', type=int, default=2048)
     parser.add_argument('--dropout', type=float, default=0.4)
     parser.add_argument('--tokenizer_attention_size', type=int, default=2)
-    parser.add_argument('--comparator_attention_size', type=int, default=2)
+    parser.add_argument('--comparator_attention_size', type=int, default=4)
     parser.add_argument('--processing_rate', type=float, default=0.3)
 
     args = parser.parse_args()
