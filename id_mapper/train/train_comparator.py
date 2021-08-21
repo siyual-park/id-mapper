@@ -12,6 +12,7 @@ from id_mapper.dataloader.comparator import ComparatorDataloader
 from id_mapper.dataset.coco import COCO
 from id_mapper.dataset.instance import InstanceImage
 from id_mapper.model.comparator import Comparator
+from id_mapper.model.tokenizer import Tokenizer
 from id_mapper.optimizer.lookahead import Lookahead
 from id_mapper.optimizer.radam import RAdam
 from id_mapper.train import trainer
@@ -150,7 +151,8 @@ if __name__ == '__main__':
     parser.add_argument('--head_size', type=int, default=8)
     parser.add_argument('--intermediate_size', type=int, default=2048)
     parser.add_argument('--dropout', type=float, default=0.4)
-    parser.add_argument('--self_attention_size', type=int, default=4)
+    parser.add_argument('--tokenizer_attention_size', type=int, default=2)
+    parser.add_argument('--comparator_attention_size', type=int, default=2)
     parser.add_argument('--processing_rate', type=float, default=0.3)
 
     args = parser.parse_args()
@@ -177,13 +179,21 @@ if __name__ == '__main__':
         local=data_path.joinpath('val_instances')
     )
 
-    model = Comparator(
+    tokenizer = Tokenizer(
         image_size=args.image_size,
         token_size=args.token_size,
         head_size=args.head_size,
         intermediate_size=args.intermediate_size,
+        attention_size=args.tokenizer_attention_size,
+        dropout=args.dropout
+    )
+
+    model = Comparator(
+        tokenizer=tokenizer,
+        head_size=args.head_size,
+        intermediate_size=args.intermediate_size,
+        attention_size=args.comparator_attention_size,
         dropout=args.dropout,
-        self_attention_size=args.self_attention_size
     )
 
     trainer = Trainer(

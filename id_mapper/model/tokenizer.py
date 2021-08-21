@@ -6,6 +6,8 @@ import torchvision.transforms as transforms
 from PIL.Image import Image
 from torch import nn
 
+from id_mapper.model.attention import SelfAttention
+
 
 def autopad(k, p=None):  # kernel, padding
     # Pad to 'same'
@@ -70,9 +72,14 @@ class Tokenizer(nn.Module):
             self,
             image_size: int,
             token_size: int,
+            head_size: int,
+            intermediate_size: int,
+            attention_size: int,
             dropout: float = 0.0
     ):
         super(Tokenizer, self).__init__()
+
+        kernel_size = token_size // head_size
 
         self.image_size = image_size
         self.token_size = token_size
@@ -103,6 +110,18 @@ class Tokenizer(nn.Module):
         self.embedding_output_size = w * h
 
         self.linear = nn.Linear(self.embedding_output_size, 1)
+
+        attentions = []
+        for i in range(attention_size):
+            attentions.append(SelfAttention(
+                kernel_size=kernel_size,
+                head_size=head_size,
+                dropout=dropout,
+                intermediate_size=intermediate_size
+            ))
+
+        self.attentions = nn.Sequential(*attentions)
+
         self.__device = torch.device('cpu')
 
     def to(self, device):
@@ -119,6 +138,7 @@ class Tokenizer(nn.Module):
         features = self.embedding(tensor)
 
         tokens = self.mapping(features)
+        tokens = self.attentions(tokens)
         tokens = torch.sigmoid(tokens)
 
         return tokens
