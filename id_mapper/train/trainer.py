@@ -17,33 +17,30 @@ T = TypeVar('T')
 class Trainer:
     def __init__(
             self,
-            model_dict_path: str or Path,
+            checkpoint: str or Path,
             model: nn.Module,
             optimizer: Optimizer,
-            criterion: _Loss,
-            val_criterion: _Loss
+            criterion: _Loss
     ):
         self.__model = model
         self.__optimizer = optimizer
         self.__criterion = criterion
-        self.__val_criterion = val_criterion
 
         self.__device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.__model.to(self.__device)
         self.__criterion.to(self.__device)
-        self.__val_criterion.to(self.__device)
 
         self.__epoch = 0
 
         self.__best_loss = float('inf')
         self.__best_epoch = 0
 
-        model_dict_path = Path(model_dict_path)
-        self.__best_model_path = Path('{}/best.pt'.format(model_dict_path))
-        self.__last_model_path = Path('{}/last.pt'.format(model_dict_path))
+        checkpoint = Path(checkpoint)
+        self.__best_model_path = Path('{}/best.pt'.format(checkpoint))
+        self.__last_model_path = Path('{}/last.pt'.format(checkpoint))
 
-        model_dict_path.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint.parent.mkdir(parents=True, exist_ok=True)
         self.__best_model_path.parent.mkdir(parents=True, exist_ok=True)
         self.__last_model_path.parent.mkdir(parents=True, exist_ok=True)
 

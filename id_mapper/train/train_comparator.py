@@ -3,7 +3,6 @@ import asyncio
 import math
 import os
 from pathlib import Path
-from time import time
 
 import torch
 from torch import nn
@@ -83,9 +82,6 @@ class Trainer(trainer.Trainer):
 
         self.__model.train()
         total_loss = 0.0
-
-        data_size = len(self.__train_data_loader)
-        log_interval = int(data_size / 100)
 
         train_data = tqdm(self.__train_data_loader, 0)
         for i, (keys, queries, labels) in enumerate(train_data):
