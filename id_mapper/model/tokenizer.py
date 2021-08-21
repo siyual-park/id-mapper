@@ -103,12 +103,18 @@ class Tokenizer(nn.Module):
         self.embedding_output_size = w * h
 
         self.linear = nn.Linear(self.embedding_output_size, 1)
+        self.__device = torch.device('cpu')
+
+    def to(self, device):
+        self.__device = device
+        super(Tokenizer, self).to(device)
 
     def forward(self, images: List[Image]):
         images = self.resizes(images)
 
         tensor = self.images_to_tensor(images)
         tensor = self.normalizes(tensor)
+        tensor.to(self.__device)
 
         features = self.embedding(tensor)
 
