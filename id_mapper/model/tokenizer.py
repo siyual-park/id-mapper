@@ -114,7 +114,7 @@ class Tokenizer(nn.Module):
 
         tensor = self.images_to_tensor(images)
         tensor = self.normalizes(tensor)
-        tensor.to(self.__device)
+        tensor = tensor.to(self.__device)
 
         features = self.embedding(tensor)
 
