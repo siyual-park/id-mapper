@@ -83,7 +83,7 @@ class Trainer(trainer.Trainer):
         self.__model.train()
         total_loss = 0.0
 
-        train_data = tqdm(self.__train_data_loader, 0)
+        train_data = tqdm(self.__train_data_loader)
         for i, (keys, queries, labels) in enumerate(train_data):
             self.__optimizer.zero_grad()
 
