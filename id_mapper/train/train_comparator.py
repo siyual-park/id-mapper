@@ -139,7 +139,7 @@ if __name__ == '__main__':
         default='http://images.cocodataset.org/annotations/annotations_trainval2017.zip',
     )
 
-    parser.add_argument('--epochs', type=int, default=10)
+    parser.add_argument('--epochs', type=int, default=40)
     parser.add_argument('--lr', type=float, default=5e-5)
     parser.add_argument('--batch_size', type=int, default=16)
 
