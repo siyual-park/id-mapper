@@ -149,7 +149,7 @@ if __name__ == '__main__':
     parser.add_argument('--image_size', type=int, default=320)
     parser.add_argument('--token_size', type=int, default=1024)
     parser.add_argument('--head_size', type=int, default=8)
-    parser.add_argument('--intermediate_size', type=int, default=2048)
+    parser.add_argument('--kernel_size', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.4)
     parser.add_argument('--tokenizer_attention_size', type=int, default=2)
     parser.add_argument('--comparator_attention_size', type=int, default=4)
@@ -182,16 +182,16 @@ if __name__ == '__main__':
     tokenizer = Tokenizer(
         image_size=args.image_size,
         token_size=args.token_size,
+        kernel_size=16,
         head_size=args.head_size,
-        intermediate_size=args.intermediate_size,
         attention_size=args.tokenizer_attention_size,
         dropout=args.dropout
     )
 
     model = Comparator(
         tokenizer=tokenizer,
+        kernel_size=args.kernel_size,
         head_size=args.head_size,
-        intermediate_size=args.intermediate_size,
         attention_size=args.comparator_attention_size,
         dropout=args.dropout,
     )

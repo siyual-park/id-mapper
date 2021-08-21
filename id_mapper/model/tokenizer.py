@@ -1,4 +1,4 @@
-from math import floor, log
+from math import floor, log, sqrt
 from typing import List
 
 import torch
@@ -73,13 +73,11 @@ class Tokenizer(nn.Module):
             image_size: int,
             token_size: int,
             head_size: int,
-            intermediate_size: int,
+            kernel_size: int,
             attention_size: int,
             dropout: float = 0.0
     ):
         super(Tokenizer, self).__init__()
-
-        kernel_size = token_size // head_size
 
         self.image_size = image_size
         self.token_size = token_size
@@ -87,9 +85,11 @@ class Tokenizer(nn.Module):
         self.image_to_tensor = transforms.ToTensor()
         self.normalize = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 
-        deep = floor(log(image_size, 2))
+        self.kernel_size = kernel_size
 
-        embedding = []
+        deep = floor(log(image_size, 2)) - floor(log(sqrt(self.kernel_size), 2))
+
+        c2s = []
         pre_channel_size = 3
         for i in range(deep):
             out_channel_size = floor(token_size - ((deep - i - 1) * (token_size - 3) / deep))
@@ -99,28 +99,27 @@ class Tokenizer(nn.Module):
                 ch_out=out_channel_size,
                 dropout=dropout
             )
-            embedding.append(c2)
+            c2s.append(c2)
             pre_channel_size = out_channel_size
 
-        self.embedding = nn.Sequential(*embedding)
+        self.c2 = nn.Sequential(*c2s)
 
-        sample = self.embedding(torch.zeros(1, 3, self.image_size, self.image_size))
+        sample = self.c2(torch.zeros(1, 3, self.image_size, self.image_size))
         batch, kernel, w, h = sample.size()
 
-        self.embedding_output_size = w * h
-
-        self.linear = nn.Linear(self.embedding_output_size, 1)
+        self.attention_embedding = nn.Linear(w * h, self.kernel_size)
 
         attentions = []
         for i in range(attention_size):
             attentions.append(SelfAttention(
-                kernel_size=kernel_size,
+                d_model=self.kernel_size,
+                kernel_size=self.kernel_size * 2,
                 head_size=head_size,
-                dropout=dropout,
-                intermediate_size=intermediate_size
+                dropout=dropout
             ))
 
         self.attentions = nn.Sequential(*attentions)
+        self.token_embedding = nn.Linear(self.kernel_size, 1)
 
         self.__device = torch.device('cpu')
 
@@ -135,10 +134,13 @@ class Tokenizer(nn.Module):
         tensor = self.normalizes(tensor)
         tensor = tensor.to(self.__device)
 
-        features = self.embedding(tensor)
+        features = self.c2(tensor)
 
-        tokens = self.mapping(features)
-        tokens = self.attentions(tokens)
+        kernels = self.mapping(features)
+        kernels = self.attentions(kernels)
+
+        tokens = self.token_embedding(kernels)
+        tokens = tokens.view(tokens.size(0), -1)
         tokens = torch.sigmoid(tokens)
 
         return tokens
@@ -168,5 +170,5 @@ class Tokenizer(nn.Module):
         batch, kernel, w, h = tensor.size()
 
         tensor = tensor.view(-1, w * h)
-        output = self.linear(tensor)
-        return output.view(batch, kernel)
+        output = self.attention_embedding(tensor)
+        return output.view(batch, kernel, -1)

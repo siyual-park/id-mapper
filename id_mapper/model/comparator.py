@@ -12,78 +12,89 @@ class Comparator(nn.Module):
     def __init__(
             self,
             tokenizer: Tokenizer,
+            kernel_size: int,
             head_size: int,
-            intermediate_size: int,
             attention_size: int,
             dropout: float,
     ):
         super().__init__()
 
-        kernel_size = tokenizer.token_size // head_size
-
         self.tokenizer = tokenizer
+        self.kernel_size = kernel_size
 
         self.attention = MultiHeadAttention(
-            d_model=kernel_size * head_size,
+            d_model=tokenizer.token_size,
             n_heads=head_size,
-            d_k=kernel_size,
-            d_v=kernel_size
-        )
-        self.feed_forward = FeedForward(
-            kernel_size=kernel_size * head_size,
-            dropout=dropout,
-            intermediate_size=intermediate_size
+            d_k=tokenizer.token_size,
+            d_v=tokenizer.token_size
         )
 
-        attentions = []
+        self.feed_forward = FeedForward(
+            d_model=tokenizer.token_size,
+            dropout=dropout,
+            intermediate_size=tokenizer.token_size * 2
+        )
+        self.normalize = nn.Linear(
+            tokenizer.token_size,
+            tokenizer.token_size
+        )
+
+        self_attentions = []
         for i in range(attention_size):
-            attentions.append(SelfAttention(
+            self_attentions.append(SelfAttention(
+                d_model=kernel_size,
                 kernel_size=kernel_size,
                 head_size=head_size,
-                dropout=dropout,
-                intermediate_size=intermediate_size
+                dropout=dropout
             ))
 
-        self.attentions = nn.Sequential(*attentions)
+        self.self_attentions = nn.Sequential(*self_attentions)
 
-        self.logits = nn.Linear(kernel_size * head_size, 1)
+        self.logits = nn.Linear(tokenizer.token_size, 1)
 
     def to(self, device):
         super(Comparator, self).to(device)
         self.tokenizer.to(device)
 
     def forward(self, keys: List[Image], queries: List[Image]):
-        query_tokens = self.tokenizer(queries)
         key_tokens = self.tokenizer(keys)
+        query_tokens = self.tokenizer(queries)
 
         kernels = self.embedding(query_tokens, key_tokens)
 
         key_size, query_size, _ = kernels.size()
+        kernels = kernels.view(key_size * query_size, -1, self.kernel_size)
+
+        kernels = self.self_attentions(kernels)
         kernels = kernels.view(key_size * query_size, -1)
 
-        kernels = self.attentions(kernels)
-        kernels = kernels.view(len(keys) * len(queries), -1)
-
         logits = self.logits(kernels)
-        logits = logits.view(len(keys), len(queries))
+        logits = logits.view(key_size, query_size)
 
         return logits
 
     def embedding(self, queries, keys) -> torch.Tensor:
+        keys_size = keys.size(0)
+        query_size = queries.size(0)
+        queries = queries.view(1, query_size, -1)
+
         kernels = []
-        for key_token in keys:
-            current_key_tokens = key_token.repeat(len(queries), 1)
-            kernel, attention = self.attention(
+        for key in keys:
+            key = key.repeat(query_size, 1)
+            key = key.view(1, query_size, -1)
+
+            context, attention = self.attention(
                 queries,
-                current_key_tokens,
-                current_key_tokens
+                key,
+                key
             )
-            kernels.append(kernel)
+            kernels.append(context)
 
         kernels = torch.stack(kernels)
-        kernels = kernels.view(len(keys) * len(queries), -1)
+        kernels = kernels.view(keys_size * query_size, -1)
 
         kernels = self.feed_forward(kernels)
-        kernels = kernels.view(len(keys), len(queries), -1)
+        kernels = self.normalize(kernels)
+        kernels = kernels.view(keys_size, query_size, -1)
 
         return kernels

@@ -77,15 +77,15 @@ class MultiHeadAttention(nn.Module):
 
 
 class FeedForward(nn.Module):
-    def __init__(self, kernel_size: int, dropout: float, intermediate_size: int):
+    def __init__(self, d_model: int, dropout: float, intermediate_size: int):
         super().__init__()
 
-        self.linear1 = nn.Linear(kernel_size, intermediate_size)
-        self.linear2 = nn.Linear(intermediate_size, kernel_size)
+        self.linear1 = nn.Linear(d_model, intermediate_size)
+        self.linear2 = nn.Linear(intermediate_size, d_model)
 
         self.activation = nn.GELU()
         self.dropout = nn.Dropout(dropout)
-        self.norm = nn.LayerNorm(kernel_size)
+        self.norm = nn.LayerNorm(d_model)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         tensor = self.linear1(inputs)
@@ -104,33 +104,32 @@ class FeedForward(nn.Module):
 class SelfAttention(nn.Module):
     def __init__(
             self,
+            d_model: int,
             kernel_size: int,
             head_size: int,
-            dropout: float,
-            intermediate_size: int
+            dropout: float
     ):
         super().__init__()
 
         self.attention = MultiHeadAttention(
-            d_model=kernel_size * head_size,
+            d_model=d_model,
             n_heads=head_size,
             d_k=kernel_size,
             d_v=kernel_size
         )
 
         self.feed_forward = FeedForward(
-            kernel_size=kernel_size * head_size,
+            d_model=d_model,
             dropout=dropout,
-            intermediate_size=intermediate_size
+            intermediate_size=d_model * 2
         )
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        output, attention = self.attention(
+        context, attention = self.attention(
             inputs,
             inputs,
             inputs
         )
 
-        output = output.view(output.size(0), -1)
-        output = self.feed_forward(output)
-        return output
+        context = self.feed_forward(context)
+        return context
