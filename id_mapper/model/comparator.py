@@ -125,23 +125,18 @@ class SelfAttention(nn.Module):
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         key_size, query_size, _ = inputs.size()
+        kernals = inputs.view(key_size * query_size, -1)
 
-        outputs = []
-        for input in inputs:
-            output, attention = self.attention(
-                input,
-                input,
-                input
-            )
-            outputs.append(output)
+        output, attention = self.attention(
+            kernals,
+            kernals,
+            kernals
+        )
 
-        outputs = torch.stack(outputs)
-        outputs = outputs.view(key_size * query_size, -1)
+        output = self.feed_forward(output)
+        output = output.view(key_size, query_size, -1)
 
-        outputs = self.feed_forward(outputs)
-        outputs = outputs.view(key_size, query_size, -1)
-
-        return outputs
+        return output
 
 
 class Comparator(nn.Module):
@@ -199,6 +194,7 @@ class Comparator(nn.Module):
 
         kernels = self.embedding(query_tokens, key_tokens)
         kernels = self.self_attentions(kernels)
+        kernels = kernels.view(len(keys) * len(queries), -1)
 
         logits = self.logits(kernels)
         logits = logits.view(len(keys), len(queries))

@@ -140,7 +140,7 @@ if __name__ == '__main__':
     )
 
     parser.add_argument('--epochs', type=int, default=40)
-    parser.add_argument('--lr', type=float, default=5e-5)
+    parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--batch_size', type=int, default=16)
 
     parser.add_argument('--checkpoint', type=str, default='comparator')
@@ -148,9 +148,9 @@ if __name__ == '__main__':
     parser.add_argument('--image_size', type=int, default=320)
     parser.add_argument('--token_size', type=int, default=1024)
     parser.add_argument('--head_size', type=int, default=8)
-    parser.add_argument('--intermediate_size', type=int, default=1024)
+    parser.add_argument('--intermediate_size', type=int, default=2048)
     parser.add_argument('--dropout', type=float, default=0.4)
-    parser.add_argument('--self_attention_size', type=int, default=2)
+    parser.add_argument('--self_attention_size', type=int, default=4)
     parser.add_argument('--processing_rate', type=float, default=0.3)
 
     args = parser.parse_args()
