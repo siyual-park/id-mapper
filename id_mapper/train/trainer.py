@@ -1,4 +1,5 @@
 import abc
+import asyncio
 import collections
 import math
 from pathlib import Path
@@ -16,28 +17,33 @@ T = TypeVar('T')
 class Trainer:
     def __init__(
             self,
-            checkpoint: str or Path,
+            model_dict_path: str or Path,
             model: nn.Module,
             optimizer: Optimizer,
-            criterion: _Loss
+            criterion: _Loss,
+            val_criterion: _Loss
     ):
         self.__model = model
         self.__optimizer = optimizer
         self.__criterion = criterion
+        self.__val_criterion = val_criterion
 
         self.__device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.__model.to(self.__device)
         self.__criterion.to(self.__device)
+        self.__val_criterion.to(self.__device)
 
         self.__epoch = 0
+
         self.__best_loss = float('inf')
+        self.__best_epoch = 0
 
-        checkpoint = Path(checkpoint)
-        self.__best_model_path = Path('{}/best.pt'.format(checkpoint))
-        self.__last_model_path = Path('{}/last.pt'.format(checkpoint))
+        model_dict_path = Path(model_dict_path)
+        self.__best_model_path = Path('{}/best.pt'.format(model_dict_path))
+        self.__last_model_path = Path('{}/last.pt'.format(model_dict_path))
 
-        checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        model_dict_path.parent.mkdir(parents=True, exist_ok=True)
         self.__best_model_path.parent.mkdir(parents=True, exist_ok=True)
         self.__last_model_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -46,7 +52,9 @@ class Trainer:
 
             self.__load(self.__best_model_path, load_optimizer=False)
 
-            self.__best_loss = self.__evaluate()
+            loop = asyncio.get_event_loop()
+            self.__best_loss = loop.run_until_complete(self.__evaluate())
+            self.__best_epoch = self.__epoch
 
             self.__epoch = 0
             self.__model.load_state_dict(origin_state_dict)
@@ -55,10 +63,11 @@ class Trainer:
 
         if self.__last_model_path.exists():
             self.__load(self.__last_model_path, load_optimizer=True)
-            self.__log('Load training model. Training proceeded {:3d} epoch.'.format(epoch))
+            self.__log('Load training model. Training proceeded {:3d} epoch.'.format(self.__epoch))
 
     async def run(self, epochs: int) -> None:
         self.__log('Training start. Final epochs is {:3d}.'.format(epochs))
+        start_time = time()
 
         for epoch in range(self.__epoch + 1, epochs + 1):
             self.__epoch = epoch
@@ -71,17 +80,30 @@ class Trainer:
             epoch_end_time = time()
 
             self.__log(
-                '| {:3d} epoch | {:5.2f}s total | {:5.2f} valid loss | {:8.2f} valid ppl |'.format(
+                '{:3d} epoch, {:5.2f} valid loss, {:8.2f} valid ppl, {:5.2f}s'.format(
                     epoch,
-                    (epoch_end_time - epoch_start_time),
                     val_loss,
-                    math.exp(val_loss))
+                    math.exp(val_loss),
+                    (epoch_end_time - epoch_start_time),
+                )
             )
 
             if val_loss <= self.__best_loss:
+                self.__best_epoch = self.__epoch
                 self.__best_loss = val_loss
                 self.__save(self.__best_model_path)
             self.__save(self.__last_model_path)
+
+        end_time = time()
+
+        self.__log(
+            '{:3d} best epoch, {:5.2f} best valid loss, {:8.2f} best valid ppl, {:5.2f}s total'.format(
+                self.__best_epoch,
+                self.__best_loss,
+                math.exp(self.__best_loss),
+                (end_time - start_time),
+            ),
+        )
 
     @abc.abstractmethod
     async def __train(self) -> None:
@@ -114,6 +136,4 @@ class Trainer:
         )
 
     def __log(self, message: str) -> None:
-        print('-' * 89)
         print(message)
-        print('-' * 89, flush=True)

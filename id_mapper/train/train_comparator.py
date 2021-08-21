@@ -48,15 +48,15 @@ class Trainer(trainer.Trainer):
             batch_size=batch_size
         )
 
+        self.__train_data_loader = train_data_loader
+        self.__val_data_loader = val_data_loader
+
         super().__init__(
             checkpoint=checkpoint,
             model=model,
             optimizer=optimizer,
             criterion=nn.BCEWithLogitsLoss(pos_weight=torch.tensor([batch_size - 1] * batch_size))
         )
-
-        self.__train_data_loader = train_data_loader
-        self.__val_data_loader = val_data_loader
 
     async def __evaluate(self) -> float:
         self.__val_data_loader.shuffle()
