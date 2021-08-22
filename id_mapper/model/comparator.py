@@ -37,7 +37,7 @@ class Comparator(nn.Module):
 
         self.normalize = nn.Linear(
             tokenizer.token_size * 2,
-            tokenigzer.token_size
+            tokenizer.token_size
         )
 
         self_attentions = []
