@@ -148,6 +148,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--image_size', type=int, default=320)
     parser.add_argument('--token_size', type=int, default=1024)
+    parser.add_argument('--kernel_size', type=int, default=4)
     parser.add_argument('--dropout', type=float, default=0.4)
     parser.add_argument('--processing_rate', type=float, default=0.3)
 
@@ -178,6 +179,7 @@ if __name__ == '__main__':
     tokenizer = Tokenizer(
         image_size=args.image_size,
         token_size=args.token_size,
+        kernel_size=args.kernel_size,
         dropout=args.dropout
     )
 

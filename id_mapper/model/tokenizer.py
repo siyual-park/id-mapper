@@ -21,6 +21,7 @@ class Tokenizer(nn.Module):
             self,
             image_size: int,
             token_size: int,
+            kernel_size: int,
             dropout: float = 0.0
     ):
         super(Tokenizer, self).__init__()
