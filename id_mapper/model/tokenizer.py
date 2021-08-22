@@ -6,7 +6,7 @@ import torchvision.transforms as transforms
 from PIL.Image import Image
 from torch import nn
 
-from id_mapper.model.attention import SelfAttentions
+from id_mapper.model.common import C2, FeedForward
 
 
 def autopad(k, p=None):  # kernel, padding
@@ -16,65 +16,11 @@ def autopad(k, p=None):  # kernel, padding
     return p
 
 
-class Conv(nn.Module):
-    # Standard convolution
-    def __init__(
-            self,
-            ch_in,
-            ch_out,
-            kernel=1,
-            stride=1,
-            padding=None,
-            groups=1,
-            act=True,
-            dropout=0.0
-    ):  # ch_in, ch_out, kernel, stride, padding, groups
-        super().__init__()
-        self.conv = nn.Conv2d(ch_in, ch_out, kernel, stride, autopad(kernel, padding), groups=groups, bias=False)
-        self.bn = nn.BatchNorm2d(ch_out)
-        self.act = nn.SiLU() if act is True else (act if isinstance(act, nn.Module) else nn.Identity())
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(self, x):
-        return self.dropout(self.act(self.bn(self.conv(x))))
-
-    def forward_fuse(self, x):
-        return self.dropout(self.act(self.conv(x)))
-
-
-class C2(nn.Module):
-    # Standard convolution
-    def __init__(
-            self,
-            ch_in,
-            ch_out,
-            pooling_kernel_size=2,
-            pooling_stride=2,
-            dropout=0.0
-    ):
-        super().__init__()
-
-        ch_mid = ch_out // 2
-
-        self.conv1 = Conv(ch_in=ch_in, ch_out=ch_mid, padding="same", dropout=dropout)
-        self.conv2 = Conv(ch_in=ch_mid, ch_out=ch_out - ch_mid, padding="same", dropout=dropout)
-        self.pooling = nn.MaxPool2d(kernel_size=pooling_kernel_size, stride=pooling_stride)
-
-    def forward(self, x):
-        feat_1 = self.conv1(x)
-        feat_2 = self.conv2(feat_1)
-
-        return self.pooling(torch.cat([feat_1, feat_2], dim=1))
-
-
 class Tokenizer(nn.Module):
     def __init__(
             self,
             image_size: int,
             token_size: int,
-            head_size: int,
-            kernel_size: int,
-            attention_size: int,
             dropout: float = 0.0
     ):
         super(Tokenizer, self).__init__()
@@ -107,17 +53,12 @@ class Tokenizer(nn.Module):
         sample = self.c2(torch.zeros(1, 3, self.image_size, self.image_size))
         batch, kernel, w, h = sample.size()
 
-        self.attention_embedding = nn.Linear(w * h, self.kernel_size)
-
-        self.attentions = SelfAttentions(
-            d_model=kernel_size,
-            kernel_size=kernel_size,
-            head_size=head_size,
-            dropout=dropout,
-            deep=attention_size
+        self.feature_embeding = nn.Linear(w * h, 1)
+        self.feed_forward = FeedForward(
+            d_model=kernel,
+            intermediate_size=kernel * 2,
+            dropout=dropout
         )
-
-        self.token_embedding = nn.Linear(self.kernel_size, 1)
 
         self.__device = torch.device('cpu')
 
@@ -134,12 +75,15 @@ class Tokenizer(nn.Module):
 
         features = self.c2(tensor)
 
-        kernels = self.mapping(features)
-        kernels = self.attentions(kernels)
+        batch, kernel, w, h = features.size()
 
-        tokens = self.token_embedding(kernels)
-        tokens = tokens.view(tokens.size(0), -1)
-        tokens = torch.sigmoid(tokens)
+        features = features.view(batch, kernel, w * h)
+        features = self.feature_embeding(features)
+
+        features = features.view(batch, kernel)
+
+        tokens = self.feed_forward(features)
+        tokens = tokens.view(batch, -1)
 
         return tokens
 
@@ -164,9 +108,3 @@ class Tokenizer(nn.Module):
 
         return torch.stack(result)
 
-    def mapping(self, tensor: torch.Tensor) -> torch.Tensor:
-        batch, kernel, w, h = tensor.size()
-
-        tensor = tensor.view(-1, w * h)
-        output = self.attention_embedding(tensor)
-        return output.view(batch, kernel, -1)
