@@ -35,15 +35,9 @@ class Comparator(nn.Module):
             intermediate_size=tokenizer.token_size * 2
         )
 
-        self.normalize = nn.Sequential(
-            nn.Linear(
-                tokenizer.token_size * 2,
-                tokenizer.token_size * 2
-            ),
-            nn.Linear(
-                tokenizer.token_size * 2,
-                tokenizer.token_size
-            )
+        self.normalize = nn.Linear(
+            tokenizer.token_size * 2,
+            tokenigzer.token_size
         )
 
         self_attentions = []
