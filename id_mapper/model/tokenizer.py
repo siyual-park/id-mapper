@@ -9,13 +9,6 @@ from torch import nn
 from id_mapper.model.common import C2, FeedForward
 
 
-def autopad(k, p=None):  # kernel, padding
-    # Pad to 'same'
-    if p is None:
-        p = k // 2 if isinstance(k, int) else [x // 2 for x in k]  # auto-pad
-    return p
-
-
 class Tokenizer(nn.Module):
     def __init__(
             self,
