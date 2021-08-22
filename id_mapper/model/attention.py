@@ -159,7 +159,7 @@ class SelfAttentions(nn.Module):
 
     def forward(self, inputs: torch.Tensor, attention=None) -> torch.Tensor:
         context = inputs
-        for self_attention in self.attentions:
+        for self_attention in self.self_attentions:
             context, _ = self_attention(context, attention)
 
         return context
