@@ -134,3 +134,32 @@ class SelfAttention(nn.Module):
 
         context = self.feed_forward(context)
         return context, attention
+
+class SelfAttentions(nn.Module):
+    def __init__(
+            self,
+            d_model: int,
+            kernel_size: int,
+            head_size: int,
+            dropout: float,
+            deep: int
+    ):
+        super().__init__()
+
+        self_attentions = []
+        for i in range(deep):
+            self_attentions.append(SelfAttention(
+                d_model=kernel_size,
+                kernel_size=kernel_size,
+                head_size=head_size,
+                dropout=dropout
+            ))
+
+        self.self_attentions = nn.ModuleList(self_attentions)
+
+    def forward(self, inputs: torch.Tensor, attention=None) -> torch.Tensor:
+        context = inputs
+        for self_attention in self.attentions:
+            context, _ = self_attention(context, attention)
+
+        return context

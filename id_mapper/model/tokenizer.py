@@ -6,7 +6,7 @@ import torchvision.transforms as transforms
 from PIL.Image import Image
 from torch import nn
 
-from id_mapper.model.attention import SelfAttention
+from id_mapper.model.attention import SelfAttentions
 
 
 def autopad(k, p=None):  # kernel, padding
@@ -109,16 +109,14 @@ class Tokenizer(nn.Module):
 
         self.attention_embedding = nn.Linear(w * h, self.kernel_size)
 
-        attentions = []
-        for i in range(attention_size):
-            attentions.append(SelfAttention(
-                d_model=self.kernel_size,
-                kernel_size=self.kernel_size * 2,
-                head_size=head_size,
-                dropout=dropout
-            ))
+        self.attentions = SelfAttentions(
+            d_model=kernel_size,
+            kernel_size=kernel_size,
+            head_size=head_size,
+            dropout=dropout,
+            deep=attention_size
+        )
 
-        self.attentions = attentions
         self.token_embedding = nn.Linear(self.kernel_size, 1)
 
         self.__device = torch.device('cpu')
@@ -137,7 +135,7 @@ class Tokenizer(nn.Module):
         features = self.c2(tensor)
 
         kernels = self.mapping(features)
-        kernels = self.attention(kernels)
+        kernels = self.attentions(kernels)
 
         tokens = self.token_embedding(kernels)
         tokens = tokens.view(tokens.size(0), -1)
@@ -172,11 +170,3 @@ class Tokenizer(nn.Module):
         tensor = tensor.view(-1, w * h)
         output = self.attention_embedding(tensor)
         return output.view(batch, kernel, -1)
-
-    def attention(self, kernel) -> torch.Tensor:
-        context = kernel
-        for self_attention in self.attentions:
-            self_attention = self_attention.to(self.__device)
-            context, _ = self_attention(context)
-
-        return context

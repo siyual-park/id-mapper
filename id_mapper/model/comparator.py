@@ -4,7 +4,7 @@ import torch
 from PIL.Image import Image
 from torch import nn
 
-from id_mapper.model.attention import MultiHeadAttention, FeedForward, SelfAttention
+from id_mapper.model.attention import MultiHeadAttention, FeedForward, SelfAttentions
 from id_mapper.model.tokenizer import Tokenizer
 
 
@@ -40,16 +40,13 @@ class Comparator(nn.Module):
             tokenizer.token_size
         )
 
-        self_attentions = []
-        for i in range(attention_size):
-            self_attentions.append(SelfAttention(
-                d_model=kernel_size,
-                kernel_size=kernel_size,
-                head_size=head_size,
-                dropout=dropout
-            ))
-
-        self.self_attentions = self_attentions
+        self.self_attentions = SelfAttentions(
+            d_model=kernel_size,
+            kernel_size=kernel_size,
+            head_size=head_size,
+            dropout=dropout,
+            deep=attention_size
+        )
 
         self.logits = nn.Linear(tokenizer.token_size, 1)
 
@@ -69,7 +66,7 @@ class Comparator(nn.Module):
         key_size, query_size, _ = kernels.size()
         kernels = kernels.view(key_size * query_size, -1, self.kernel_size)
 
-        kernels = self.self_attention(kernels)
+        kernels = self.self_attentions(kernels)
         kernels = kernels.view(key_size * query_size, -1)
 
         logits = self.logits(kernels)
@@ -104,11 +101,3 @@ class Comparator(nn.Module):
         kernels = kernels.view(keys_size, query_size, -1)
 
         return kernels
-
-    def self_attention(self, kernel) -> torch.Tensor:
-        context = kernel
-        for self_attention in self.self_attentions:
-            self_attention = self_attention.to(self.__device)
-            context, _ = self_attention(context)
-
-        return context
