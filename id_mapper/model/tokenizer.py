@@ -124,8 +124,8 @@ class Tokenizer(nn.Module):
         self.__device = torch.device('cpu')
 
     def to(self, device):
-        self.__device = device
         super(Tokenizer, self).to(device)
+        self.__device = device
 
     def forward(self, images: List[Image]):
         images = self.resizes(images)
@@ -176,7 +176,7 @@ class Tokenizer(nn.Module):
     def attention(self, kernel) -> torch.Tensor:
         context = kernel
         for self_attention in self.attentions:
+            self_attention = self_attention.to(self.__device)
             context, _ = self_attention(context)
 
         return context
-

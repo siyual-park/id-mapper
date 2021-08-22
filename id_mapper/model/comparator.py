@@ -53,9 +53,12 @@ class Comparator(nn.Module):
 
         self.logits = nn.Linear(tokenizer.token_size, 1)
 
+        self.__device = torch.device('cpu')
+
     def to(self, device):
-        self.tokenizer.to(device)
         super(Comparator, self).to(device)
+        self.tokenizer.to(device)
+        self.__device
 
     def forward(self, keys: List[Image], queries: List[Image]):
         key_tokens = self.tokenizer(keys)
@@ -105,6 +108,7 @@ class Comparator(nn.Module):
     def self_attention(self, kernel) -> torch.Tensor:
         context = kernel
         for self_attention in self.self_attentions:
+            self_attention = self_attention.to(self.__device)
             context, _ = self_attention(context)
 
         return context
