@@ -124,12 +124,13 @@ class SelfAttention(nn.Module):
             intermediate_size=d_model * 2
         )
 
-    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+    def forward(self, inputs: torch.Tensor, attention=None) -> torch.Tensor:
         context, attention = self.attention(
             inputs,
             inputs,
-            inputs
+            inputs,
+            attention
         )
 
         context = self.feed_forward(context)
-        return context
+        return context, attention

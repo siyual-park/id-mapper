@@ -25,18 +25,25 @@ class Comparator(nn.Module):
         self.attention = MultiHeadAttention(
             d_model=tokenizer.token_size,
             n_heads=head_size,
-            d_k=tokenizer.token_size,
-            d_v=tokenizer.token_size
+            d_k=tokenizer.token_size * 2,
+            d_v=tokenizer.token_size * 2
         )
 
         self.feed_forward = FeedForward(
-            d_model=tokenizer.token_size,
+            d_model=tokenizer.token_size * 2,
             dropout=dropout,
             intermediate_size=tokenizer.token_size * 2
         )
-        self.normalize = nn.Linear(
-            tokenizer.token_size,
-            tokenizer.token_size
+
+        self.normalize = nn.Sequential(
+            nn.Linear(
+                tokenizer.token_size * 2,
+                tokenizer.token_size * 2
+            ),
+            nn.Linear(
+                tokenizer.token_size * 2,
+                tokenizer.token_size
+            )
         )
 
         self_attentions = []
@@ -48,7 +55,7 @@ class Comparator(nn.Module):
                 dropout=dropout
             ))
 
-        self.self_attentions = nn.Sequential(*self_attentions)
+        self.self_attentions = self_attentions
 
         self.logits = nn.Linear(tokenizer.token_size, 1)
 
@@ -65,7 +72,7 @@ class Comparator(nn.Module):
         key_size, query_size, _ = kernels.size()
         kernels = kernels.view(key_size * query_size, -1, self.kernel_size)
 
-        kernels = self.self_attentions(kernels)
+        kernels = self.self_attention(kernels)
         kernels = kernels.view(key_size * query_size, -1)
 
         logits = self.logits(kernels)
@@ -76,17 +83,19 @@ class Comparator(nn.Module):
     def embedding(self, queries, keys) -> torch.Tensor:
         keys_size = keys.size(0)
         query_size = queries.size(0)
-        queries = queries.view(1, query_size, -1)
+        queries = queries.view(query_size, 1, -1)
 
         kernels = []
         for key in keys:
             key = key.repeat(query_size, 1)
-            key = key.view(1, query_size, -1)
+            key = key.view(query_size, 1, -1)
+
+            kernel = torch.cat([key, queries], dim=1)
 
             context, attention = self.attention(
-                queries,
-                key,
-                key
+                kernel,
+                kernel,
+                kernel
             )
             kernels.append(context)
 
@@ -98,3 +107,10 @@ class Comparator(nn.Module):
         kernels = kernels.view(keys_size, query_size, -1)
 
         return kernels
+
+    def self_attention(self, kernel) -> torch.Tensor:
+        context = kernel
+        for self_attention in self.self_attentions:
+            context, _ = self_attention(context)
+
+        return context

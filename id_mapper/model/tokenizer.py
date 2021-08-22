@@ -118,7 +118,7 @@ class Tokenizer(nn.Module):
                 dropout=dropout
             ))
 
-        self.attentions = nn.Sequential(*attentions)
+        self.attentions = attentions
         self.token_embedding = nn.Linear(self.kernel_size, 1)
 
         self.__device = torch.device('cpu')
@@ -137,7 +137,7 @@ class Tokenizer(nn.Module):
         features = self.c2(tensor)
 
         kernels = self.mapping(features)
-        kernels = self.attentions(kernels)
+        kernels = self.attention(kernels)
 
         tokens = self.token_embedding(kernels)
         tokens = tokens.view(tokens.size(0), -1)
@@ -172,3 +172,11 @@ class Tokenizer(nn.Module):
         tensor = tensor.view(-1, w * h)
         output = self.attention_embedding(tensor)
         return output.view(batch, kernel, -1)
+
+    def attention(self, kernel) -> torch.Tensor:
+        context = kernel
+        for self_attention in self.attentions:
+            context, _ = self_attention(context)
+
+        return context
+
