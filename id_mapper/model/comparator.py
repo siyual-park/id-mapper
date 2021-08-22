@@ -54,8 +54,8 @@ class Comparator(nn.Module):
         self.logits = nn.Linear(tokenizer.token_size, 1)
 
     def to(self, device):
-        super(Comparator, self).to(device)
         self.tokenizer.to(device)
+        super(Comparator, self).to(device)
 
     def forward(self, keys: List[Image], queries: List[Image]):
         key_tokens = self.tokenizer(keys)
