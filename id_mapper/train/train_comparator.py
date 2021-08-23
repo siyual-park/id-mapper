@@ -29,6 +29,7 @@ class Trainer(trainer.Trainer):
             batch_size: int,
             lr: float
     ):
+        print(model)
         optimizer = RAdam(model.parameters(), lr=lr)
         optimizer = Lookahead(optimizer, k=5, alpha=0.5)
 
@@ -64,6 +65,8 @@ class Trainer(trainer.Trainer):
         self.__model.eval()
 
         total_loss = 0.0
+        progressed = 0
+
         with torch.no_grad():
             for keys, queries, labels in self.__val_data_loader:
                 result = self.__model(
@@ -73,16 +76,22 @@ class Trainer(trainer.Trainer):
 
                 labels = labels.to(self.__device)
 
+                if labels.size(0) != result.size(0):
+                    continue
+
                 loss = self.__criterion(result, labels)
                 total_loss += loss.item()
+                progressed += 1
 
-        return total_loss / len(self.__val_data_loader)
+        return total_loss / progressed
 
     async def __train(self) -> None:
         self.__train_data_loader.shuffle()
 
         self.__model.train()
+
         total_loss = 0.0
+        progressed = 0
 
         train_data = tqdm(self.__train_data_loader)
         for i, (keys, queries, labels) in enumerate(train_data):
@@ -95,14 +104,18 @@ class Trainer(trainer.Trainer):
 
             labels = labels.to(self.__device)
 
+            if labels.size(0) != result.size(0):
+                continue
+
             loss = self.__criterion(result, labels)
             loss.backward()
 
             total_loss += loss.item()
+            progressed += 1
 
             self.__optimizer.step()
 
-            cur_loss = total_loss / (i + 1)
+            cur_loss = total_loss / progressed
             train_data.set_description('{:3d} epoch, {:5.2f} loss, {:8.2f} ppl'.format(
                 self.__epoch,
                 cur_loss,
