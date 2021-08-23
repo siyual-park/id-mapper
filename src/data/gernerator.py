@@ -44,6 +44,7 @@ class BoundingBoxImageGenerator:
         existed_data_size = _get_data_size(self.__path)
         current_data_index = 0
 
+        print(f'Generate bounding box images from {self.__coco_dataset.data_path} to {self.__path}')
         for image, annotations in tqdm(self.__coco_dataset):
             boxes = annotations[:, :4]
             for box in boxes:

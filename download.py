@@ -60,8 +60,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--dataset', type=str, default='2017')
-    parser.add_argument('--force', type=bool, default=False)
     parser.add_argument('--path', type=str, default=str(data_path))
+    parser.add_argument('--force', type=bool, default=False)
 
     args = parser.parse_args()
 
