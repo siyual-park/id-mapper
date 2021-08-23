@@ -27,6 +27,7 @@ class COCO(data.Dataset):
     ):
         path = Path(path)
 
+        self.dataset = dataset
         self.annotations_path = path.joinpath('annotations')
         self.data_path = path.joinpath(dataset)
 

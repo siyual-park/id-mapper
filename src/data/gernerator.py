@@ -32,7 +32,7 @@ class BoundingBoxImageGenerator:
         path = Path(path)
 
         self.__coco_dataset = coco_dataset
-        self.__path = path
+        self.__path = path.joinpath(coco_dataset.dataset)
         self.__format = format
 
     def generate(self, force: bool = False):
