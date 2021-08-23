@@ -115,6 +115,8 @@ class COCOImageDownloader(Downloader):
 
 class COCOAnnotationDownloader(Downloader):
     def __init__(self, sources: List[str], local: str or Path):
+        local = Path(local)
+
         self.sources = sources
         self.local = local.joinpath('annotations')
         self.coco_local = local
@@ -135,27 +137,3 @@ class COCOAnnotationDownloader(Downloader):
             downloader.download(force=force)
             downloader.unzip(override=True)
             downloader.clear(all=False)
-
-
-if __name__ == '__main__':
-    path = Path(os.path.abspath(__file__))
-    root_path = path.parent.parent.parent
-
-    data_path = root_path.joinpath('data')
-    checkpoint_path = root_path.joinpath('checkpoint')
-
-    train_downloader = COCOImageDownloader(
-        source='http://images.cocodataset.org/zips/train2017.zip',
-        local=data_path.joinpath('coco')
-    )
-    val_downloader = COCOImageDownloader(
-        source='http://images.cocodataset.org/zips/val2017.zip',
-        local=data_path.joinpath('coco')
-    )
-    annotation_downloader = COCOAnnotationDownloader(
-        sources=['http://images.cocodataset.org/annotations/annotations_trainval2017.zip'],
-        local=data_path.joinpath('coco')
-    )
-
-    val_downloader.download()
-    train_downloader.download()

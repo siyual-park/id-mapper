@@ -53,19 +53,19 @@ def download(dataset: str, local: str or Path, force: bool = False):
 
 if __name__ == '__main__':
     path = Path(os.path.abspath(__file__))
-    root_path = path
+    root_path = path.parent
 
-    data_path = root_path.joinpath('data')
+    data_path = root_path.joinpath('data').joinpath('coco')
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--dataset', type=str, default='2017')
     parser.add_argument('--force', type=bool, default=False)
-    parser.add_argument('--path', type=str, default='coco')
+    parser.add_argument('--path', type=str, default=str(data_path))
 
     args = parser.parse_args()
 
     dataset_path = data_path.joinpath(args.path)
 
-    download(args.dataset, dataset_path, args.force)
+    download(args.dataset, args.path, args.force)
 
