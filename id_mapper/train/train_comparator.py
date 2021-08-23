@@ -29,7 +29,6 @@ class Trainer(trainer.Trainer):
             batch_size: int,
             lr: float
     ):
-        print(model)
         optimizer = RAdam(model.parameters(), lr=lr)
         optimizer = Lookahead(optimizer, k=5, alpha=0.5)
 
