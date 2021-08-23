@@ -2,7 +2,7 @@ import argparse
 import os
 from pathlib import Path
 
-from src.data.dataset import COCO
+from src.data.dataset import COCODataset
 from src.data.gernerator import BoundingBoxImageGenerator
 
 
@@ -15,7 +15,7 @@ def generate(
     origin_path = Path(origin_path)
     path = Path(path)
 
-    coco = COCO(
+    coco = COCODataset(
         path=origin_path,
         dataset=dataset
     )

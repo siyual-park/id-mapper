@@ -1,9 +1,12 @@
 from pathlib import Path
+from random import shuffle
 
 import numpy as np
 from PIL import Image
 from pycocotools import coco
 from torch.utils import data
+
+from src.data.utils import get_data_size, represents_int
 
 
 def load_annotated_ids(coco: coco.COCO):
@@ -19,7 +22,7 @@ def load_annotated_ids(coco: coco.COCO):
     return image_ids
 
 
-class COCO(data.Dataset):
+class COCODataset(data.Dataset):
     def __init__(
             self,
             path: str or Path,
@@ -82,3 +85,37 @@ class COCO(data.Dataset):
         annotations[:, 3] = annotations[:, 1] + annotations[:, 3]
 
         return annotations
+
+
+class InstanceDataset(data.Dataset):
+    def __init__(
+            self,
+            path: str or Path,
+            dataset: str
+    ):
+        path = Path(path)
+
+        self.dataset = dataset
+        self.data_path = path.joinpath(dataset)
+
+        data_size = get_data_size(self.data_path)
+        self.__image_ids = list(range(data_size))
+
+    def shuffle(self):
+        shuffle(self.__image_ids)
+
+    def __len__(self):
+        return len(self.__image_ids)
+
+    def __getitem__(self, idx):
+        id = self.__image_ids[idx]
+
+        images_path = self.data_path.joinpath(str(id))
+
+        images = []
+        for entry in sorted(images_path.iterdir()):
+            if represents_int(entry.name.removesuffix(entry.suffix)):
+                image = Image.open(entry).convert('RGB')
+                images.append(image)
+
+        return images

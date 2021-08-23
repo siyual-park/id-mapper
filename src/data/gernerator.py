@@ -3,29 +3,14 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from src.data.dataset import COCO
-
-
-def _represents_int(s: str):
-    try:
-        int(s)
-        return True
-    except ValueError:
-        return False
-
-
-def _get_data_size(path: Path):
-    data_size = 0
-    for entry in path.iterdir():
-        if _represents_int(entry.name.removesuffix(entry.suffix)):
-            data_size += 1
-    return data_size
+from src.data.dataset import COCODataset
+from src.data.utils import get_data_size
 
 
 class BoundingBoxImageGenerator:
     def __init__(
             self,
-            coco_dataset: COCO,
+            coco_dataset: COCODataset,
             path: str or Path,
             format: str
     ):
@@ -41,7 +26,7 @@ class BoundingBoxImageGenerator:
 
         self.__path.mkdir(parents=True, exist_ok=True)
 
-        existed_data_size = _get_data_size(self.__path)
+        existed_data_size = get_data_size(self.__path)
         current_data_index = 0
 
         print(f'Generate bounding box images from {self.__coco_dataset.data_path} to {self.__path}')
