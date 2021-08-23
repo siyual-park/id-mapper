@@ -52,6 +52,8 @@ class Trainer(trainer.Trainer):
         self.__train_data_loader = train_data_loader
         self.__val_data_loader = val_data_loader
 
+        self.__batch_size = batch_size
+
         super().__init__(
             checkpoint=checkpoint,
             model=model,
@@ -69,15 +71,15 @@ class Trainer(trainer.Trainer):
 
         with torch.no_grad():
             for keys, queries, labels in self.__val_data_loader:
+                if labels.size(0) != self.__batch_size:
+                    continue
+
                 result = self.__model(
                     keys=keys,
                     queries=queries
                 )
 
                 labels = labels.to(self.__device)
-
-                if labels.size(0) != result.size(0):
-                    continue
 
                 loss = self.__criterion(result, labels)
                 total_loss += loss.item()
@@ -95,6 +97,9 @@ class Trainer(trainer.Trainer):
 
         train_data = tqdm(self.__train_data_loader)
         for i, (keys, queries, labels) in enumerate(train_data):
+            if labels.size(0) != self.__batch_size:
+                continue
+
             self.__optimizer.zero_grad()
 
             result = self.__model(
@@ -103,9 +108,6 @@ class Trainer(trainer.Trainer):
             )
 
             labels = labels.to(self.__device)
-
-            if labels.size(0) != result.size(0):
-                continue
 
             loss = self.__criterion(result, labels)
             loss.backward()
