@@ -69,7 +69,7 @@ class ZIPDownloader(Downloader):
         self.__downloader.download(force=force)
 
     def unzip(self, override: bool = False):
-        if override and os.path.exists(self.local):\
+        if override and os.path.exists(self.local):
             return
 
         with zipfile.ZipFile(self.__downloader.local, 'r') as zip_ref:

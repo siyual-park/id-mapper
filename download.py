@@ -53,7 +53,7 @@ def download(dataset: str, local: str or Path, force: bool = False):
 
 if __name__ == '__main__':
     path = Path(os.path.abspath(__file__))
-    root_path = path.parent
+    root_path = path.parent.parent
 
     data_path = root_path.joinpath('data').joinpath('coco')
 
