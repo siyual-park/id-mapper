@@ -2,14 +2,16 @@ import argparse
 import os
 from pathlib import Path
 
-from src.data.dataset import COCODataset
-from src.data.gernerator import BoundingBoxImageGenerator
+from src.data.dataset import COCODataset, InstanceDataset
+from src.data.gernerator import BoundingBoxImageGenerator, NoisedImageGenerator
 
 
 def generate(
         origin_path: str or Path,
         path: str or Path,
         dataset: str,
+        expand: int,
+        noise: float,
         force: bool = False
 ):
     origin_path = Path(origin_path)
@@ -21,12 +23,25 @@ def generate(
     )
 
     bounding_box_image_generator = BoundingBoxImageGenerator(
-        coco_dataset=coco,
+        dataset=coco,
         path=path,
         format='jpg'
     )
 
     bounding_box_image_generator.generate(force=force)
+
+    instance_dataset = InstanceDataset(
+        path=path,
+        dataset=dataset
+    )
+
+    noised_image_generator = NoisedImageGenerator(
+        dataset=instance_dataset,
+        format='jpg'
+    )
+
+    for i in range(expand):
+        noised_image_generator.generate(noise)
 
 
 if __name__ == '__main__':
@@ -41,6 +56,8 @@ if __name__ == '__main__':
     parser.add_argument('--origin_path', type=str, default=str(origin_path))
     parser.add_argument('--path', type=str, default=str(date_path))
     parser.add_argument('--dataset', type=str, default='train2017')
+    parser.add_argument('--expand', type=int, default=4)
+    parser.add_argument('--noise', type=float, default=0.4)
     parser.add_argument('--force', type=bool, default=False)
 
     args = parser.parse_args()

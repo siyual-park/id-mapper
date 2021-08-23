@@ -1,5 +1,6 @@
 from pathlib import Path
 from random import shuffle
+from typing import List, Tuple
 
 import numpy as np
 from PIL import Image
@@ -44,7 +45,7 @@ class COCODataset(data.Dataset):
     def __len__(self):
         return len(self.__image_ids)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> Tuple[Image.Image, np.ndarray]:
         id = self.__image_ids[idx]
 
         image = self.load_image(id)
@@ -58,7 +59,7 @@ class COCODataset(data.Dataset):
         image = Image.open(path).convert('RGB')
         return image
 
-    def load_annotations(self, image_id):
+    def load_annotations(self, image_id) -> np.ndarray:
         # get ground truth annotations
         annotations_ids = self.__coco.getAnnIds(imgIds=image_id, iscrowd=False)
         annotations = np.zeros((0, 5))
@@ -107,7 +108,7 @@ class InstanceDataset(data.Dataset):
     def __len__(self):
         return len(self.__image_ids)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> Tuple[List[Image.Image], Path]:
         id = self.__image_ids[idx]
 
         images_path = self.data_path.joinpath(str(id))
@@ -118,4 +119,4 @@ class InstanceDataset(data.Dataset):
                 image = Image.open(entry).convert('RGB')
                 images.append(image)
 
-        return images
+        return images, images_path
