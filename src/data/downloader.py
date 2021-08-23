@@ -7,17 +7,20 @@ from tqdm import tqdm
 
 
 class Downloader:
-    def __init__(self, source: str, target: str or Path):
-        self.__source = source
-        self.__target = Path(target)
+    def __init__(self, source: str, local: str or Path):
+        self.source = source
+        self.local = Path(local)
 
-    def download(self) -> None:
-        if os.path.exists(self.__target):
-            return
+    def download(self, force: bool = False) -> None:
+        if os.path.exists(self.local):
+            if force:
+                os.remove(self.local)
+            else:
+                return
 
-        print(f'Download from {self.__source} to {self.__target}')
+        print(f'Download from {self.source} to {self.local}')
 
-        self.__target.parent.mkdir(parents=True, exist_ok=True)
+        self.local.parent.mkdir(parents=True, exist_ok=True)
 
         def download_progress_hook(progress_bar):
             last_block = [0]
@@ -32,7 +35,7 @@ class Downloader:
 
         with tqdm() as t:
             hook = download_progress_hook(t)
-            request.urlretrieve(self.__source, self.__target, reporthook=hook)
+            request.urlretrieve(self.source, self.local, reporthook=hook)
 
 
 def get_remote_filename(source: str) -> str:
@@ -40,30 +43,92 @@ def get_remote_filename(source: str) -> str:
     return tokens[len(tokens) - 1]
 
 
-class COCODownloader(Downloader):
-    def __init__(self, source: str, target: str or Path):
-        target = Path(target)
+class ZIPDownloader(Downloader):
+    def __init__(self, source: str, local: str or Path):
+        super().__init__(source, local)
+
+        local = Path(local)
         filename = get_remote_filename(source)
-        download_tmp = target.parent.joinpath(filename)
+        download_tmp = local.parent.joinpath(filename)
 
-        super().__init__(source, download_tmp)
+        self.__downloader = Downloader(
+            source=source,
+            local=download_tmp
+        )
+        self.local = local
 
-        dataset = os.path.splitext(filename)[0]
+    def download(self, force: bool = False) -> None:
+        self.__downloader.download(force=force)
 
-        self.local = target.joinpath(dataset)
-        self.dataset = dataset
-
-    def download(self) -> None:
+    def unzip(self, force: bool = False):
         if os.path.exists(self.local):
+            if force:
+                os.remove(self.local)
+            else:
+                return
+
+        with zipfile.ZipFile(self.__downloader.local, 'r') as zip_ref:
+            zip_ref.extractall(self.local)
+
+    def clear(self, all: bool = False):
+        if os.path.exists(self.__downloader.local):
+            os.remove(self.__downloader.local)
+
+        if not all:
             return
 
-        self.local.parent.parent.mkdir(parents=True, exist_ok=True)
+        if os.path.exists(self.local):
+            os.remove(self.local)
 
-        super().download()
 
-        with zipfile.ZipFile(self.__target, 'r') as zip_ref:
-            zip_ref.extractall(self.local.parent)
-        os.remove(self.__target)
+class COCOImageDownloader(Downloader):
+    def __init__(self, source: str, local: str or Path):
+        local = Path(local)
+        filename = get_remote_filename(source)
+        dataset = os.path.splitext(filename)[0]
+
+        super().__init__(source, local.joinpath(dataset))
+
+        self.__downloader = ZIPDownloader(
+            source=source,
+            local=local
+        )
+        self.coco_local = local
+
+    def download(self, force: bool = False) -> None:
+        if os.path.exists(self.local):
+            if force:
+                os.remove(self.local)
+            else:
+                return
+
+        self.__downloader.download(force=force)
+        self.__downloader.unzip(force=False)
+        self.__downloader.clear(all=False)
+
+
+class COCOAnnotationDownloader(Downloader):
+    def __init__(self, source: str, local: str or Path):
+        local = Path(local)
+
+        super().__init__(source, local.joinpath('annotations'))
+
+        self.__downloader = ZIPDownloader(
+            source=source,
+            local=local
+        )
+        self.coco_local = local
+
+    def download(self, force: bool = False) -> None:
+        if os.path.exists(self.local):
+            if force:
+                os.remove(self.local)
+            else:
+                return
+
+        self.__downloader.download(force=force)
+        self.__downloader.unzip(force=False)
+        self.__downloader.clear(all=False)
 
 
 if __name__ == '__main__':
@@ -73,9 +138,18 @@ if __name__ == '__main__':
     data_path = root_path.joinpath('data')
     checkpoint_path = root_path.joinpath('checkpoint')
 
-    downloader = COCODownloader(
+    train_downloader = COCOImageDownloader(
+        source='http://images.cocodataset.org/zips/train2017.zip',
+        local=data_path.joinpath('coco')
+    )
+    val_downloader = COCOImageDownloader(
         source='http://images.cocodataset.org/zips/val2017.zip',
-        target=data_path.joinpath('coco')
+        local=data_path.joinpath('coco')
+    )
+    annotation_downloader = COCOAnnotationDownloader(
+        source='http://images.cocodataset.org/annotations/annotations_trainval2017.zip',
+        local=data_path.joinpath('coco')
     )
 
-    downloader.download()
+    val_downloader.download()
+    train_downloader.download()
