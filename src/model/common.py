@@ -1,11 +1,9 @@
 from typing import Optional
 
 import numpy as np
-import torch
-import torch.nn.functional as F
 from torch import nn
 
-from src.model.common_types import size_2_t
+from src.common_types import size_2_t
 
 
 def autopad(kernel_size: size_2_t, padding: Optional[size_2_t], dilation: size_2_t) -> size_2_t:
@@ -96,14 +94,10 @@ class Bottleneck(nn.Module):
 
 
 class Shortcut(nn.Module):
-    def __init__(self, module: nn.Module):
+    def __init__(self):
         super().__init__()
 
-        self.module = module
-
-    def forward(self, x):
-        y = self.module(x)
-
+    def forward(self, x, y):
         if x.size() != y.size():
             return y
 

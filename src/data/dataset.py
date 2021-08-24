@@ -9,6 +9,7 @@ from PIL import Image
 from pycocotools import coco
 from torch.utils import data
 
+from src.common_types import size_2_t
 from src.data.utils import get_data_size, represents_int
 
 
@@ -127,9 +128,14 @@ class InstanceDataset(data.Dataset):
 class CompareDataset(data.Dataset):
     def __init__(
             self,
-            dataset: InstanceDataset
+            dataset: InstanceDataset,
+            image_size: size_2_t,
     ):
+        if not isinstance(image_size, int):
+            image_size = (image_size, image_size)
+
         self.__dataset = dataset
+        self.image_size = image_size
 
         self.__image_to_tensor = transforms.ToTensor()
         self.__normalize = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
@@ -143,6 +149,9 @@ class CompareDataset(data.Dataset):
     def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         set1, _ = self.__dataset[idx * 2]
         set2, _ = self.__dataset[idx * 2 + 1]
+
+        set1 = [image.resize(self.image_size) for image in set1]
+        set2 = [image.resize(self.image_size) for image in set2]
 
         set1 = self.__images_to_tensor(set1)
         set2 = self.__images_to_tensor(set2)

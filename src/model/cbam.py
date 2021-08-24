@@ -43,6 +43,8 @@ class ChannelAttention(nn.Module):
         self.pool_types = pool_types
 
     def forward(self, x):
+        # x (batch, channel, w, h)
+
         channel_att_sum = None
 
         for pool_type in self.pool_types:
