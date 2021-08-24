@@ -99,6 +99,11 @@ class Tokenizer(nn.Module):
         batch, channels, w, h = sample.size()
 
         self.feature_compression = nn.Linear(w * h, 1)
+        self.feature_expand = nn.Sequential(
+            nn.Linear(channels, channels),
+            nn.ReLU(),
+            nn.Linear(channels, token_size),
+        )
 
     def forward(self, x):
         # x (batch, channel, w, h)
@@ -110,7 +115,9 @@ class Tokenizer(nn.Module):
         x_out = x_out.view(batch * channel, -1)
 
         x_out = self.feature_compression(x_out)
+
         x_out = x_out.view(batch, channel)
+        x_out = self.feature_expand(x_out)
 
         return x_out
 
