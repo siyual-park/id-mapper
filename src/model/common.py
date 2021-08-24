@@ -1,15 +1,22 @@
 from typing import Optional
 
+import numpy as np
+import torch
+import torch.nn.functional as F
 from torch import nn
 
 from src.model.common_types import size_2_t
 
 
-def autopad(k, p=None):  # kernel, padding
+def autopad(kernel_size: size_2_t, padding: Optional[size_2_t], dilation: size_2_t) -> size_2_t:
     # Pad to 'same'
-    if p is None:
-        p = k // 2 if isinstance(k, int) else [x // 2 for x in k]  # auto-pad
-    return p
+    if padding is None:
+        kernel_size = np.asarray((kernel_size, kernel_size) if isinstance(kernel_size, int) else kernel_size)
+        dilation = np.asarray((dilation, dilation) if isinstance(dilation, int) else dilation)
+
+        padding = (dilation * (kernel_size - 1) + 1) // 2
+
+    return padding
 
 
 class Conv(nn.Module):
@@ -20,7 +27,8 @@ class Conv(nn.Module):
             out_channels: int,
             kernel_size: size_2_t,
             stride: size_2_t = 1,
-            padding: Optional[str] = None,
+            padding: Optional[size_2_t] = None,
+            dilation: size_2_t = 1,
             groups: int = 1,
             activate: bool or nn.Module = True,
             dropout_prob: float = 0.0
@@ -32,14 +40,16 @@ class Conv(nn.Module):
             out_channels,
             kernel_size,
             stride,
-            autopad(kernel_size, padding),
+            autopad(kernel_size, padding, dilation),
+            dilation=dilation,
             groups=groups,
             bias=False
         )
 
         self.batch_norm = nn.BatchNorm2d(out_channels)
-        self.activate = nn.SiLU() if activate is True else (
-            activate if isinstance(activate, nn.Module) else nn.Identity())
+        self.activate = nn.ReLU() if activate is True else (
+            activate if isinstance(activate, nn.Module) else nn.Identity()
+        )
         self.dropout = nn.Dropout2d(p=dropout_prob)
 
     def forward(self, x):
@@ -98,3 +108,8 @@ class Shortcut(nn.Module):
             return y
 
         return x + y
+
+
+class Flatten(nn.Module):
+    def forward(self, x):
+        return x.view(x.size(0), -1)
