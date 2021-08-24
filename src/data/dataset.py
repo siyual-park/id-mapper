@@ -174,7 +174,7 @@ class CompareDataset(data.Dataset):
         set1_labels = set1_labels.repeat(len(set1), 1)
         set2_labels = set2_labels.repeat(len(set2), 1)
 
-        labels = torch.cat([set1_labels, set2_labels], dim=1)
+        labels = torch.cat([set1_labels, set2_labels], dim=0)
 
         return keys, queries, labels
 
