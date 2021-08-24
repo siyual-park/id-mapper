@@ -71,7 +71,7 @@ class Trainer:
 
             epoch_start_time = time()
 
-            await self.train()
+            self.__last_checkpoint.loss = await self.train()
             self.__last_checkpoint.loss = await self.evaluate()
 
             epoch_end_time = time()
@@ -107,14 +107,6 @@ class Trainer:
 
         self.__last_checkpoint.load(map_location=self.__device)
 
-    async def sync_best_checkpoint(self):
-        self.__in_memory_checkpoint.save()
-
-        self.__best_checkpoint.load(map_location=self.__device)
-        self.__best_checkpoint.loss = await self.evaluate()
-
-        self.__in_memory_checkpoint.load(map_location=self.__device)
-
     def save(self):
         self.__last_checkpoint.save()
 
@@ -124,8 +116,16 @@ class Trainer:
 
             self.__best_checkpoint.save()
 
+    async def sync_best_checkpoint(self):
+        self.__in_memory_checkpoint.save()
+
+        self.__best_checkpoint.load(map_location=self.__device)
+        self.__best_checkpoint.loss = await self.evaluate()
+
+        self.__in_memory_checkpoint.load(map_location=self.__device)
+
     @abc.abstractmethod
-    async def train(self) -> None:
+    async def train(self) -> float:
         raise NotImplemented
 
     @abc.abstractmethod
