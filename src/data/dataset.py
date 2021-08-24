@@ -3,6 +3,8 @@ from random import shuffle
 from typing import List, Tuple
 
 import numpy as np
+import torch
+import torchvision.transforms as transforms
 from PIL import Image
 from pycocotools import coco
 from torch.utils import data
@@ -120,3 +122,60 @@ class InstanceDataset(data.Dataset):
                 images.append(image)
 
         return images, images_path
+
+
+class CompareDataset(data.Dataset):
+    def __init__(
+            self,
+            dataset: InstanceDataset
+    ):
+        self.__dataset = dataset
+
+        self.__image_to_tensor = transforms.ToTensor()
+        self.__normalize = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+
+    def shuffle(self):
+        self.__dataset.shuffle()
+
+    def __len__(self):
+        return len(self.__dataset) // 2
+
+    def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        set1, _ = self.__dataset[idx * 2]
+        set2, _ = self.__dataset[idx * 2 + 1]
+
+        set1 = self.__images_to_tensor(set1)
+        set2 = self.__images_to_tensor(set2)
+
+        set1 = self.__normalizes(set1)
+        set2 = self.__normalizes(set2)
+
+        keys = torch.cat([set1, set2], dim=0)
+        queries = torch.cat([set1, set2], dim=0)
+
+        set1_labels = [1] * len(set1)
+        set1_labels.extend([0] * len(set2))
+        set1_labels = torch.tensor(set1_labels)
+
+        set2_labels = 1 - set1_labels
+
+        set1_labels = set1_labels.repeat(len(set1))
+        set2_labels = set2_labels.repeat(len(set2))
+
+        labels = torch.cat([set1_labels, set2_labels], dim=0)
+
+        return keys, queries, labels
+
+    def __images_to_tensor(self, images: List[Image.Image]) -> torch.Tensor:
+        tensors = []
+        for image in images:
+            tensors.append(self.__image_to_tensor(image))
+
+        return torch.stack(tensors)
+
+    def __normalizes(self, tensor: torch.Tensor) -> torch.Tensor:
+        result = []
+        for image in tensor:
+            result.append(self.__normalize(image))
+
+        return torch.stack(result)
