@@ -18,15 +18,7 @@ class ResBlock(nn.Module):
     ):
         super().__init__()
 
-        self.conv1 = Bottleneck(
-            in_channels=channels,
-            out_channels=channels,
-            kernel_size=kernel_size,
-            groups=groups,
-            expansion=expansion,
-            dropout_prob=dropout_prob,
-        )
-        self.conv2 = Bottleneck(
+        self.conv = Bottleneck(
             in_channels=channels,
             out_channels=channels,
             kernel_size=kernel_size,
@@ -38,8 +30,7 @@ class ResBlock(nn.Module):
         self.shortcut = Shortcut()
 
     def forward(self, x):
-        x_out = self.conv1(x)
-        x_out = self.conv2(x_out)
+        x_out = self.conv(x)
 
         return self.shortcut(x, x_out)
 
