@@ -69,7 +69,7 @@ class ZIPDownloader(Downloader):
         self.__downloader.download(force=force)
 
     def unzip(self, override: bool = False):
-        if override and os.path.exists(self.local):
+        if not override and os.path.exists(self.local):
             return
 
         with zipfile.ZipFile(self.__downloader.local, 'r') as zip_ref:
@@ -98,7 +98,7 @@ class COCOImageDownloader(Downloader):
 
         self.__downloader = ZIPDownloader(
             source=source,
-            local=local
+            local=self.coco_local
         )
 
     def download(self, force: bool = False) -> None:
@@ -131,7 +131,7 @@ class COCOAnnotationDownloader(Downloader):
         for source in self.sources:
             downloader = ZIPDownloader(
                 source=source,
-                local=self.local
+                local=self.coco_local
             )
 
             downloader.download(force=force)
