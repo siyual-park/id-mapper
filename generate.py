@@ -56,7 +56,7 @@ if __name__ == '__main__':
     parser.add_argument('--origin_path', type=str, default=str(origin_path))
     parser.add_argument('--path', type=str, default=str(date_path))
     parser.add_argument('--dataset', type=str, nargs='+', default=['train2017', 'val2017'])
-    parser.add_argument('--expand', type=int, default=4)
+    parser.add_argument('--expand', type=int, default=1)
     parser.add_argument('--noise', type=float, default=0.4)
     parser.add_argument('--force', type=bool, default=False)
 
