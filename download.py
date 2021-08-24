@@ -19,20 +19,7 @@ class DownloadInfo:
         self.annotation = annotation
 
 
-download_infos = {
-    '2017': DownloadInfo(
-        train='http://images.cocodataset.org/zips/train2017.zip',
-        val='http://images.cocodataset.org/zips/val2017.zip',
-        annotation=[
-            'http://images.cocodataset.org/annotations/annotations_trainval2017.zip',
-        ]
-    )
-}
-
-
-def download(dataset: str, local: str or Path, force: bool = False):
-    download_info = download_infos[dataset]
-
+def download(download_info: DownloadInfo, local: str or Path, force: bool = False):
     train_downloader = COCOImageDownloader(
         source=download_info.train,
         local=local
@@ -65,7 +52,17 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    download_infos = {
+        '2017': DownloadInfo(
+            train='http://images.cocodataset.org/zips/train2017.zip',
+            val='http://images.cocodataset.org/zips/val2017.zip',
+            annotation=[
+                'http://images.cocodataset.org/annotations/annotations_trainval2017.zip',
+            ]
+        )
+    }
+
     dataset_path = data_path.joinpath(args.path)
+    download_info = download_infos[args.dataset]
 
-    download(args.dataset, args.path, args.force)
-
+    download(download_info, args.path, args.force)
