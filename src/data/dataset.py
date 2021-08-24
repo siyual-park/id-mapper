@@ -165,8 +165,8 @@ class CompareDataset(data.Dataset):
         keys = torch.cat([set1, set2], dim=0)
         queries = keys
 
-        set1_labels = [1] * len(set1)
-        set1_labels.extend([0] * len(set2))
+        set1_labels = [1.0] * len(set1)
+        set1_labels.extend([0.0] * len(set2))
         set1_labels = torch.tensor(set1_labels)
 
         set2_labels = 1 - set1_labels

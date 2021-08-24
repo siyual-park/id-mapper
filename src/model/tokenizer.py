@@ -109,7 +109,7 @@ class Tokenizer(nn.Module):
         )
 
         pooling_kernel_size = 3
-        pooling_dilation = 3
+        pooling_dilation = 2
 
         self.compression = nn.Sequential(*[
             FeatureCompression(
