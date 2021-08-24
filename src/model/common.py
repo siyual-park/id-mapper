@@ -1,6 +1,7 @@
 from typing import Optional
 
 import numpy as np
+import torch
 from torch import nn
 
 from src.common_types import size_2_t
@@ -107,3 +108,22 @@ class Shortcut(nn.Module):
 class Flatten(nn.Module):
     def forward(self, x):
         return x.view(x.size(0), -1)
+
+
+class CosineSimilarly(nn.Module):
+    def forward(self, x1: torch.Tensor, x2: torch.Tensor):
+        x1_norm = x1 / x1.norm(dim=1)[:, None]
+        x2_norm = x2 / x2.norm(dim=1)[:, None]
+
+        return torch.mm(x1_norm, x2_norm.transpose(0, 1))
+
+
+class CosineDistance(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.cosine_similarly = CosineSimilarly()
+
+    def forward(self, x1: torch.Tensor, x2: torch.Tensor):
+        cosine_similarly = self.cosine_similarly(x1, x2)
+
+        return (1 - cosine_similarly) / 2
