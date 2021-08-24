@@ -49,7 +49,8 @@ class ResBlock(nn.Module):
 class Upscaling(nn.Module):
     def __init__(
             self,
-            channels: int,
+            in_channels: int,
+            out_channels: int,
             pooling_kernel_size: size_2_t = 2,
             pooling_stride: size_2_t = 2,
             pooling_dilation: size_2_t = 1,
@@ -57,14 +58,14 @@ class Upscaling(nn.Module):
     ):
         super().__init__()
 
-        self.conv = Conv(
-            in_channels=3,
-            out_channels=channels,
-            kernel_size=1,
+        self.attention = CBAM(
+            gate_channels=in_channels,
             dropout_prob=dropout_prob
         )
-        self.attention = CBAM(
-            gate_channels=channels,
+        self.conv = Conv(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=1,
             dropout_prob=dropout_prob
         )
         self.pooling = nn.MaxPool2d(
@@ -75,8 +76,8 @@ class Upscaling(nn.Module):
         )
 
     def forward(self, x):
-        x_out = self.conv(x)
-        x_out = self.attention(x_out)
+        x_out = self.attention(x)
+        x_out = self.conv(x_out)
         x_out = self.pooling(x_out)
 
         return x_out
@@ -146,7 +147,8 @@ class Tokenizer(nn.Module):
         pooling_stride = 2
 
         self.up_scaling = Upscaling(
-            channels=channels,
+            in_channels=3,
+            out_channels=channels,
             pooling_kernel_size=pooling_kernel_size,
             pooling_stride=pooling_stride,
             pooling_dilation=pooling_dilation,
