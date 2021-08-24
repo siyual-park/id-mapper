@@ -165,8 +165,12 @@ class Tokenizer(nn.Module):
         if isinstance(image_size, int):
             image_size = (image_size, image_size)
 
-        sample = self.compression(torch.zeros((1, channels, image_size[0], image_size[1])))
-        batch, channels, w, h = sample.size()
+        zero_image = torch.zeros((1, 3, image_size[0], image_size[1]))
+
+        tmp = self.up_scaling(zero_image)
+        tmp = self.compression(tmp)
+
+        batch, channels, w, h = tmp.size()
 
         self.feature_compression = nn.Linear(w * h, 1)
         self.feature_expand = nn.Sequential(
