@@ -7,7 +7,7 @@ from torch import nn
 from src.common_types import size_2_t
 
 
-def autopad(kernel_size: size_2_t, padding: Optional[size_2_t]) -> size_2_t:
+def autopad(kernel_size: size_2_t, padding: Optional[size_2_t] = None) -> size_2_t:
     # Pad to 'same'
     if padding is None:
         kernel_size = np.asarray((kernel_size, kernel_size) if isinstance(kernel_size, int) else kernel_size)

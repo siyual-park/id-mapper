@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 
 from src.model.cbam import CBAM
@@ -71,7 +72,7 @@ class FeatureCompression(nn.Module):
             kernel_size=pooling_kernel_size,
             stride=pooling_stride,
             dilation=pooling_dilation,
-            padding=autopad(pooling_kernel_size, pooling_dilation)
+            padding=autopad(pooling_kernel_size)
         )
 
     def forward(self, x):
@@ -124,10 +125,7 @@ class Tokenizer(nn.Module):
         if isinstance(image_size, int):
             image_size = (image_size, image_size)
 
-        w, h = image_size
-        for i in range(deep):
-            w = w // pooling_kernel_size + 1
-            h = h // pooling_kernel_size + 1
+        batch, channels, w, h = self.compression(torch.zeros((1, channels, image_size[0], image_size[1])))
 
         self.feature_compression = nn.Sequential(
             nn.Linear(w * h, int(w * h * 0.5)),
