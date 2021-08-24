@@ -48,11 +48,11 @@ class Checkpoint(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def save(self):
+    def save(self) -> bool:
         pass
 
     @abstractmethod
-    def load(self, map_location=None):
+    def load(self, map_location=None) -> bool:
         pass
 
 
@@ -104,7 +104,7 @@ class HardCheckpoint(Checkpoint):
     def loss(self, value: float) -> None:
         self.__loss = value
 
-    def save(self):
+    def save(self) -> bool:
         torch.save(
             {
                 'loss': self.loss,
@@ -114,10 +114,11 @@ class HardCheckpoint(Checkpoint):
             },
             self.__path
         )
+        return True
 
-    def load(self, map_location=None):
+    def load(self, map_location=None) -> bool:
         if not self.__path.exists():
-            return
+            return False
 
         checkpoint = torch.load(self.__path, map_location=map_location)
 
@@ -130,6 +131,8 @@ class HardCheckpoint(Checkpoint):
         self.__optimizer.load_state_dict(optimizer_state_dict)
         self.__epoch = epoch
         self.__loss = loss
+
+        return True
 
 
 class SoftCheckpoint(Checkpoint):
@@ -182,23 +185,32 @@ class SoftCheckpoint(Checkpoint):
     def loss(self, value: float) -> None:
         self.__loss = value
 
-    def save(self):
+    def save(self) -> bool:
         self.__cached_model_state_dict = self.__model.state_dict()
         self.__cached_optimizer_state_dict = self.__optimizer.state_dict()
         self.__cached_epoch = self.epoch
         self.__cached_loss = self.loss
 
-    def load(self, map_location=None):
+        return True
+
+    def load(self, map_location=None) -> bool:
+        result = False
         if self.__cached_model_state_dict is not None:
+            result = True
             self.__model.load_state_dict(self.__cached_model_state_dict)
         if self.__cached_optimizer_state_dict is not None:
+            result = True
             self.__optimizer.load_state_dict(self.__cached_optimizer_state_dict)
         if self.__cached_epoch is not None:
+            result = True
             self.__epoch = self.__cached_epoch
         if self.__cached_loss is not None:
+            result = True
             self.__loss = self.__cached_loss
 
         self.__cached_model_state_dict = None
         self.__cached_optimizer_state_dict = None
         self.__cached_epoch = None
         self.__cached_loss = None
+
+        return result

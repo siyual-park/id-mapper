@@ -51,6 +51,7 @@ class FeatureCompression(nn.Module):
             groups: int = 1,
             pooling_kernel_size: size_2_t = 2,
             pooling_stride: size_2_t = 2,
+            pooling_dilation: size_2_t = 1,
             expansion: float = 0.5,
             dropout_prob: float = 0.0
     ):
@@ -69,13 +70,14 @@ class FeatureCompression(nn.Module):
         self.pooling = nn.MaxPool2d(
             kernel_size=pooling_kernel_size,
             stride=pooling_stride,
-            padding=autopad(pooling_kernel_size, None, 1)
+            dilation=pooling_dilation,
+            padding=autopad(pooling_kernel_size, pooling_dilation, 1)
         )
 
     def forward(self, x):
         x_out = self.res_block(x)
-        x_out = self.self.attention(x_out)
-        x_out = self.self.pooling(x_out)
+        x_out = self.attention(x_out)
+        x_out = self.pooling(x_out)
 
         return x_out
 
@@ -85,7 +87,8 @@ class Tokenizer(nn.Module):
             self,
             image_size: size_2_t,
             token_size: int,
-            deep: int = 2
+            deep: int = 2,
+            dropout_prob: float = 0.0
     ):
         super().__init__()
 
@@ -95,17 +98,42 @@ class Tokenizer(nn.Module):
             Conv(
                 in_channels=3,
                 out_channels=channels,
-                kernel_size=1
+                kernel_size=1,
+                dropout_prob=dropout_prob
             ),
             CBAM(
-                gate_channels=channels
+                gate_channels=channels,
+                dropout_prob=dropout_prob
             )
         )
 
-        self.compression = nn.Sequential(*[FeatureCompression(channels=channels) for _ in range(deep)])
+        pooling_kernel_size = 3
+        pooling_dilation = 3
 
-        if not isinstance(image_size, int):
+        self.compression = nn.Sequential(*[
+            FeatureCompression(
+                channels=channels,
+                dropout_prob=dropout_prob,
+                pooling_kernel_size=pooling_kernel_size,
+                pooling_stride=pooling_kernel_size,
+                pooling_dilation=pooling_dilation
+            )
+            for _ in range(deep)
+        ])
+
+        if isinstance(image_size, int):
             image_size = (image_size, image_size)
+
+        w, h = image_size
+        for i in range(deep):
+            w = w // pooling_kernel_size + 1
+            h = h // pooling_kernel_size + 1
+
+        self.feature_compression = nn.Sequential(
+            nn.Linear(w * h, int(w * h * 0.5)),
+            nn.ReLU(),
+            nn.Linear(int(w * h * 0.5), 1),
+        )
 
     def forward(self, x):
         # x (batch, channel, w, h)
@@ -114,6 +142,9 @@ class Tokenizer(nn.Module):
         x_out = self.compression(x_out)
 
         batch, channel, w, h = x_out.size()
+        x_out = x_out.view(batch * channel, -1)
+
+        x_out = self.feature_compression(x_out)
         x_out = x_out.view(batch, channel, -1)
 
         return x_out

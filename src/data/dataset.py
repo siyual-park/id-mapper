@@ -131,7 +131,7 @@ class CompareDataset(data.Dataset):
             dataset: InstanceDataset,
             image_size: size_2_t,
     ):
-        if not isinstance(image_size, int):
+        if isinstance(image_size, int):
             image_size = (image_size, image_size)
 
         self.__dataset = dataset
@@ -150,6 +150,9 @@ class CompareDataset(data.Dataset):
         set1, _ = self.__dataset[idx * 2]
         set2, _ = self.__dataset[idx * 2 + 1]
 
+        shuffle(set1)
+        shuffle(set2)
+
         set1 = [image.resize(self.image_size) for image in set1]
         set2 = [image.resize(self.image_size) for image in set2]
 
@@ -160,7 +163,7 @@ class CompareDataset(data.Dataset):
         set2 = self.__normalizes(set2)
 
         keys = torch.cat([set1, set2], dim=0)
-        queries = torch.cat([set1, set2], dim=0)
+        queries = keys
 
         set1_labels = [1] * len(set1)
         set1_labels.extend([0] * len(set2))
@@ -168,10 +171,10 @@ class CompareDataset(data.Dataset):
 
         set2_labels = 1 - set1_labels
 
-        set1_labels = set1_labels.repeat(len(set1))
-        set2_labels = set2_labels.repeat(len(set2))
+        set1_labels = set1_labels.repeat(len(set1), 1)
+        set2_labels = set2_labels.repeat(len(set2), 1)
 
-        labels = torch.cat([set1_labels, set2_labels], dim=0)
+        labels = torch.cat([set1_labels, set2_labels], dim=1)
 
         return keys, queries, labels
 

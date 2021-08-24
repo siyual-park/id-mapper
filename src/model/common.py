@@ -14,6 +14,7 @@ def autopad(kernel_size: size_2_t, padding: Optional[size_2_t], dilation: size_2
         dilation = np.asarray((dilation, dilation) if isinstance(dilation, int) else dilation)
 
         padding = (dilation * (kernel_size - 1) + 1) // 2
+        padding = tuple(padding)
 
     return padding
 
@@ -91,7 +92,11 @@ class Bottleneck(nn.Module):
         )
 
     def forward(self, x):
-        return self.up_sample(self.conv(self.down_sample(x)))
+        x_out = self.down_sample(x)
+        x_out = self.conv(x_out)
+        x_out = self.up_sample(x_out)
+
+        return x_out
 
 
 class Shortcut(nn.Module):

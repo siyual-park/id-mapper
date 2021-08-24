@@ -26,7 +26,8 @@ class ChannelAttention(nn.Module):
             self,
             gate_channels: int,
             reduction_ratio: float = 1 / 16,
-            pool_types=None
+            pool_types=None,
+            dropout_prob: float = 0.0
     ):
         super(ChannelAttention, self).__init__()
 
@@ -38,7 +39,8 @@ class ChannelAttention(nn.Module):
             Flatten(),
             nn.Linear(gate_channels, int(gate_channels * reduction_ratio)),
             nn.ReLU(),
-            nn.Linear(int(gate_channels * reduction_ratio), gate_channels)
+            nn.Linear(int(gate_channels * reduction_ratio), gate_channels),
+            nn.Dropout(dropout_prob)
         )
         self.pool_types = pool_types
 
@@ -74,7 +76,7 @@ class ChannelAttention(nn.Module):
 
 
 class SpatialAttention(nn.Module):
-    def __init__(self):
+    def __init__(self, dropout_prob: float = 0.0):
         super(SpatialAttention, self).__init__()
 
         kernel_size = 7
@@ -84,7 +86,8 @@ class SpatialAttention(nn.Module):
             out_channels=1,
             kernel_size=kernel_size,
             stride=1,
-            activate=False
+            activate=False,
+            dropout_prob=dropout_prob
         )
 
     def forward(self, x):
@@ -99,12 +102,20 @@ class CBAM(nn.Module):
             gate_channels: int,
             reduction_ratio: float = 1 / 16,
             pool_types=None,
-            no_spatial: bool = False
+            no_spatial: bool = False,
+            dropout_prob: float = 0.0
     ):
         super().__init__()
 
-        self.channel_attention = ChannelAttention(gate_channels, reduction_ratio, pool_types)
-        self.spatial_attention = SpatialAttention() if not no_spatial else None
+        self.channel_attention = ChannelAttention(
+            gate_channels,
+            reduction_ratio,
+            pool_types,
+            dropout_prob=dropout_prob
+        )
+        self.spatial_attention = SpatialAttention(
+            dropout_prob=dropout_prob
+        ) if not no_spatial else None
 
     def forward(self, x):
         channel_attention = self.channel_attention(x)
