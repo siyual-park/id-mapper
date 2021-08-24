@@ -92,7 +92,7 @@ class Tokenizer(nn.Module):
     ):
         super().__init__()
 
-        channels = token_size
+        channels = token_size // 2
 
         self.up_scaling = nn.Sequential(
             Conv(
@@ -135,6 +135,12 @@ class Tokenizer(nn.Module):
             nn.Linear(int(w * h * 0.5), 1),
         )
 
+        self.feature_expand = nn.Sequential(
+            nn.Linear(channels, channels),
+            nn.ReLU(),
+            nn.Linear(channels, token_size),
+        )
+
     def forward(self, x):
         # x (batch, channel, w, h)
 
@@ -145,7 +151,9 @@ class Tokenizer(nn.Module):
         x_out = x_out.view(batch * channel, -1)
 
         x_out = self.feature_compression(x_out)
-        x_out = x_out.view(batch, channel, -1)
+
+        x_out = x_out.view(batch, channel)
+        x_out = self.feature_expand(x_out)
 
         return x_out
 
