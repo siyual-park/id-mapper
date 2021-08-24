@@ -7,7 +7,7 @@ import torch
 from torch import nn
 from torch.optim import Optimizer
 
-from src.models.checkpoints import HardCheckpoint, SoftCheckpoint
+from src.model.checkpoint import HardCheckpoint, SoftCheckpoint
 
 
 class Trainer:
