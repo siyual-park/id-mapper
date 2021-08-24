@@ -71,7 +71,7 @@ class FeatureCompression(nn.Module):
             kernel_size=pooling_kernel_size,
             stride=pooling_stride,
             dilation=pooling_dilation,
-            padding=autopad(pooling_kernel_size, pooling_dilation, 1)
+            padding=autopad(pooling_kernel_size, pooling_dilation)
         )
 
     def forward(self, x):

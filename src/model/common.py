@@ -7,13 +7,12 @@ from torch import nn
 from src.common_types import size_2_t
 
 
-def autopad(kernel_size: size_2_t, padding: Optional[size_2_t], dilation: size_2_t) -> size_2_t:
+def autopad(kernel_size: size_2_t, padding: Optional[size_2_t]) -> size_2_t:
     # Pad to 'same'
     if padding is None:
         kernel_size = np.asarray((kernel_size, kernel_size) if isinstance(kernel_size, int) else kernel_size)
-        dilation = np.asarray((dilation, dilation) if isinstance(dilation, int) else dilation)
 
-        padding = (dilation * (kernel_size - 1) + 1) // 2
+        padding = kernel_size // 2
         padding = tuple(padding)
 
     return padding
@@ -40,7 +39,7 @@ class Conv(nn.Module):
             out_channels,
             kernel_size,
             stride,
-            autopad(kernel_size, padding, dilation),
+            autopad(kernel_size, padding),
             dilation=dilation,
             groups=groups,
             bias=False
