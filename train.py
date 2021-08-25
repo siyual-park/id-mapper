@@ -34,10 +34,10 @@ if __name__ == '__main__':
     parser.add_argument('--k', type=int, default=5)
     parser.add_argument('--alpha', type=float, default=0.5)
 
-    parser.add_argument('--image_size', type=int, default=320)
+    parser.add_argument('--image_size', type=int, default=160)
     parser.add_argument('--image_num', type=int, default=2)
     parser.add_argument('--token_size', type=int, default=1024)
-    parser.add_argument('--deep', type=int, default=2)
+    parser.add_argument('--deep', type=int, default=1)
     parser.add_argument('--res_block_deep', type=int, default=2)
     parser.add_argument('--dropout_prob', type=float, default=0.4)
 

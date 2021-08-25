@@ -145,7 +145,7 @@ class Tokenizer(nn.Module):
             self,
             image_size: size_2_t,
             token_size: int,
-            deep: int = 2,
+            deep: int,
             res_block_deep: int = 2,
             dropout_prob: float = 0.0
     ):
