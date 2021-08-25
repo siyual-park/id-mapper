@@ -36,23 +36,6 @@ class ResBlock(nn.Module):
 
         self.shortcut_conv = Shortcut(self.conv)
 
-        self.attention = Bottleneck(
-            in_channels=channels,
-            out_channels=channels,
-            down_channels=down_channels,
-            module=CBAM(
-                gate_channels=down_channels,
-                dropout_prob=dropout_prob
-            )
-        )
-
-        self.bottleneck_conv = Bottleneck(
-            in_channels=channels,
-            out_channels=channels,
-            down_channels=down_channels,
-            module=self.shortcut_conv
-        )
-
         self.pooling = nn.MaxPool2d(
             kernel_size=pooling_kernel_size,
             stride=pooling_stride,
@@ -60,11 +43,24 @@ class ResBlock(nn.Module):
             padding=autopad(pooling_kernel_size)
         )
 
+        self.attention = CBAM(
+            gate_channels=down_channels,
+            dropout_prob=dropout_prob
+        )
+
+        self.bottleneck_conv = Bottleneck(
+            in_channels=channels,
+            out_channels=channels,
+            down_channels=down_channels,
+            module=nn.Sequential(
+                self.shortcut_conv,
+                self.pooling,
+                self.attention
+            )
+        )
+
     def forward(self, x):
         x_out = self.bottleneck_conv(x)
-        x_out = self.pooling(x_out)
-        x_out = self.attention(x_out)
-
         return x_out
 
 
