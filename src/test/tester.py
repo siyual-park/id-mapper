@@ -61,7 +61,7 @@ class Tester:
         self._in_memory_checkpoint.load(map_location=self._device)
 
         print(
-            '{:3d} epoch, {:5.2f} loss, {:8.2f} ppl, {:5.2f}s/it'.format(
+            '{:3d} epoch, {:5.2f} loss, {:8.2f} ppl, {:5.5f}s/it'.format(
                 self._checkpoint.epoch,
                 loss,
                 math.exp(loss),
@@ -118,6 +118,18 @@ class ComparatorTester(Tester):
         print('Confusion matrix')
         print(DataFrame(confusion_matrix))
 
+        precision = self.get_precision(confusion_matrix)
+        recall = self.get_precision(confusion_matrix)
+        f1 = self.get_f1(precision, recall)
+
+        print(
+            '{:5.2f} f1, {:5.2f} precision, {:5.2f} recall;'.format(
+                f1,
+                precision,
+                recall,
+            ),
+        )
+
         return total_loss / len(self.__dataset), total_time / len(self.__dataset)
 
     def get_confusion_matrix(self, actual: torch.Tensor, expected: torch.Tensor):
@@ -131,6 +143,15 @@ class ComparatorTester(Tester):
         (x, y) = actual.shape
         for i in range(x):
             for j in range(y):
-                matrix[actual[i, j], expected[i, j]] += 1
+                matrix[int(actual[i, j]), int(expected[i, j])] += 1
 
         return matrix
+
+    def get_f1(self, precision, recall):
+        return 2 * (recall * precision) / (recall + precision)
+
+    def get_precision(self, confusion_matrix):
+        return confusion_matrix[1, 1] / confusion_matrix[1, :].sum()
+
+    def get_recall(self, confusion_matrix):
+        return confusion_matrix[1, 1] / confusion_matrix[:, 1].sum()
