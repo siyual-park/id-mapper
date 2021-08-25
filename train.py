@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--checkpoint', type=str, default=checkpoints_path.joinpath(str(time())))
+    parser.add_argument('--checkpoint', type=str, default=str(time()))
 
     parser.add_argument('--train', type=str, default='train2017')
     parser.add_argument('--val', type=str, default='val2017')
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     compare = Comparator(tokenizer=tokenizer)
 
     trainer = ComparatorTrainer(
-        checkpoint=args.checkpoint,
+        checkpoint=checkpoints_path.joinpath(args.checkpoint),
         model=compare,
         train_dataset=train_dataset,
         val_dataset=val_dataset,

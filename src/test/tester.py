@@ -19,6 +19,7 @@ class Tester:
             model: nn.Module
     ):
         checkpoint = Path(checkpoint)
+        checkpoint.mkdir(parents=True, exist_ok=True)
 
         self._model = model
 

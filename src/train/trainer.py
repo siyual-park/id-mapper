@@ -24,6 +24,8 @@ class Trainer:
     ):
         checkpoint = Path(checkpoint)
 
+        checkpoint.mkdir(parents=True, exist_ok=True)
+
         best_checkpoint_path = checkpoint.joinpath('best.pt')
         last_checkpoint_path = checkpoint.joinpath('last.pt')
 
