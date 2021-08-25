@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--image_size', type=int, default=160)
     parser.add_argument('--image_num', type=int, default=2)
-    parser.add_argument('--token_size', type=int, default=1024)
+    parser.add_argument('--token_size', type=int, default=512)
     parser.add_argument('--deep', type=int, default=1)
     parser.add_argument('--res_block_deep', type=int, default=2)
 
