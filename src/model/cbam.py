@@ -38,7 +38,8 @@ class ChannelAttention(nn.Module):
         self.mlp = CalculateChannel(nn.Sequential(
             nn.Linear(gate_channels, int(gate_channels * reduction_ratio)),
             nn.ReLU(),
-            nn.Linear(int(gate_channels * reduction_ratio), gate_channels)
+            nn.Linear(int(gate_channels * reduction_ratio), gate_channels),
+            nn.Dropout(dropout_prob)
         ))
         self.pool_types = pool_types
 

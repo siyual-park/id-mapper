@@ -121,7 +121,7 @@ class CalculateChannel(nn.Module):
 
         x_out = x.view(batch, channel, -1)
         x_out = torch.transpose(x_out, 1, 2)
-        x_out = x_out.view(-1, channel)
+        x_out = x_out.view(-1, 1, channel)
 
         x_out = self.module(x_out)
 
