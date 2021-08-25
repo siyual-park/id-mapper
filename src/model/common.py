@@ -70,7 +70,7 @@ class Bottleneck(nn.Module):
     ):
         super().__init__()
 
-        down_sample_channels = int(out_channels * expansion)
+        down_sample_channels = max(int(out_channels * expansion), 1)
 
         self.down_sample = Conv(
             in_channels,

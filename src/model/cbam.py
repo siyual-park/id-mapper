@@ -36,7 +36,7 @@ class ChannelAttention(nn.Module):
 
         self.gate_channels = gate_channels
 
-        middle_channels = min(int(gate_channels * reduction_ratio), 2)
+        middle_channels = max(int(gate_channels * reduction_ratio), 2)
         self.mlp = CalculateChannel(nn.Sequential(
             nn.Linear(gate_channels, middle_channels),
             nn.ReLU(),
@@ -144,8 +144,7 @@ class BottleneckCBAM(nn.Module):
             dropout_prob: float = 0.0
     ):
         super().__init__()
-
-        down_sample_channels = int(gate_channels * expansion)
+        down_sample_channels = max(int(gate_channels * expansion), 1)
 
         self.down_sample = Conv(
             gate_channels,
