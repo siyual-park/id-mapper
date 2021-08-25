@@ -112,6 +112,7 @@ class Compression(nn.Module):
             pooling_stride: size_2_t = 2,
             pooling_dilation: size_2_t = 1,
             deep: int = 2,
+            res_block_deep: int = 1,
             expansion: float = 0.5,
             dropout_prob: float = 0.0
     ):
@@ -125,16 +126,11 @@ class Compression(nn.Module):
                 pooling_kernel_size=pooling_kernel_size,
                 pooling_stride=pooling_kernel_size,
                 pooling_dilation=pooling_dilation,
-                deep=deep,
+                deep=res_block_deep,
                 expansion=expansion,
                 dropout_prob=dropout_prob,
             ) for _ in range(deep)
         ])
-
-        self.attention = BottleneckCBAM(
-            gate_channels=channels,
-            dropout_prob=dropout_prob
-        )
 
         self.pooling = nn.MaxPool2d(
             kernel_size=pooling_kernel_size,
@@ -145,7 +141,6 @@ class Compression(nn.Module):
 
     def forward(self, x):
         x_out = self.res_block(x)
-        x_out = self.attention(x_out)
         x_out = self.pooling(x_out)
 
         return x_out
@@ -157,6 +152,7 @@ class Tokenizer(nn.Module):
             image_size: size_2_t,
             token_size: int,
             deep: int = 2,
+            res_block_deep: int = 2,
             dropout_prob: float = 0.0
     ):
         super().__init__()
@@ -182,6 +178,7 @@ class Tokenizer(nn.Module):
             pooling_stride=pooling_stride,
             pooling_dilation=pooling_dilation,
             deep=deep,
+            res_block_deep=res_block_deep,
             dropout_prob=dropout_prob,
         )
 

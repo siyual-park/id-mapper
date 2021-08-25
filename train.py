@@ -36,6 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--image_size', type=int, default=320)
     parser.add_argument('--token_size', type=int, default=1024)
     parser.add_argument('--deep', type=int, default=2)
+    parser.add_argument('--res_block_deep', type=int, default=2)
     parser.add_argument('--dropout_prob', type=float, default=0.4)
 
     args = parser.parse_args()
@@ -62,6 +63,7 @@ if __name__ == '__main__':
         image_size=args.image_size,
         token_size=args.token_size,
         deep=args.deep,
+        res_block_deep=args.res_block_deep,
         dropout_prob=args.dropout_prob
     )
     compare = Comparator(tokenizer=tokenizer)
