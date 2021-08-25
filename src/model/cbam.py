@@ -35,12 +35,15 @@ class ChannelAttention(nn.Module):
             pool_types = ['avg', 'max']
 
         self.gate_channels = gate_channels
+
+        middle_channels = min(int(gate_channels * reduction_ratio), 2)
         self.mlp = CalculateChannel(nn.Sequential(
-            nn.Linear(gate_channels, int(gate_channels * reduction_ratio)),
+            nn.Linear(gate_channels, middle_channels),
             nn.ReLU(),
-            nn.Linear(int(gate_channels * reduction_ratio), gate_channels),
+            nn.Linear(middle_channels, gate_channels),
             nn.Dropout(dropout_prob)
         ))
+
         self.pool_types = pool_types
 
     def forward(self, x):
