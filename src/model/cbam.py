@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from src.model.common import Flatten, Conv
+from src.model.common import CalculateChannel, Conv
 
 
 class ChannelPool(nn.Module):
@@ -35,7 +35,7 @@ class ChannelAttention(nn.Module):
             pool_types = ['avg', 'max']
 
         self.gate_channels = gate_channels
-        self.mlp = Flatten(nn.Sequential(
+        self.mlp = CalculateChannel(nn.Sequential(
             nn.Linear(gate_channels, int(gate_channels * reduction_ratio)),
             nn.ReLU(),
             nn.Linear(int(gate_channels * reduction_ratio), gate_channels),

@@ -109,18 +109,25 @@ class Shortcut(nn.Module):
         return x + y
 
 
-class Flatten(nn.Module):
+class CalculateChannel(nn.Module):
     def __init__(self, module: nn.Module):
         super().__init__()
 
         self.module = module
 
     def forward(self, x):
+        # x (batch, channel, w, h)
         batch, channel, w, h = x.size()
 
-        x_out = x.view(batch * channel, -1)
+        x_out = x.view(batch, channel, -1)
+        x_out = torch.transpose(x_out, 1, 2)
+        x_out = x_out.view(-1, channel)
+
         x_out = self.module(x_out)
-        x_out = x_out.view(batch, channel, -1)
+
+        x_out = x_out.view(batch, w * h, -1)
+        x_out = torch.transpose(x_out, 1, 2)
+        x_out = x_out.view(batch, -1, w, h)
 
         return x_out
 
