@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 from src.common_types import size_2_t
-from src.model.cbam import CBAM, BottleneckCBAM
+from src.model.cbam import CBAM
 from src.model.common import Bottleneck, Shortcut, autopad
 from src.model.common import Conv
 
