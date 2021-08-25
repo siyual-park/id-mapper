@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
+from typing import Optional
 
 import torch
 from torch import nn
@@ -19,12 +20,12 @@ class Checkpoint(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def optimizer(self) -> Optimizer:
+    def optimizer(self) -> Optional[Optimizer]:
         pass
 
     @optimizer.setter
     @abstractmethod
-    def optimizer(self, value: Optimizer) -> None:
+    def optimizer(self, value: Optional[Optimizer]) -> None:
         pass
 
     @property
@@ -34,7 +35,7 @@ class Checkpoint(metaclass=ABCMeta):
 
     @epoch.setter
     @abstractmethod
-    def epoch(self, value: Optimizer) -> None:
+    def epoch(self, value: int) -> None:
         pass
 
     @property
@@ -61,7 +62,7 @@ class HardCheckpoint(Checkpoint):
             self,
             path: str or Path,
             model: nn.Module,
-            optimizer: Optimizer,
+            optimizer: Optional[Optimizer],
             epoch: int,
             loss: float
     ):
@@ -81,11 +82,11 @@ class HardCheckpoint(Checkpoint):
         self.__model = value
 
     @property
-    def optimizer(self) -> Optimizer:
+    def optimizer(self) -> Optional[Optimizer]:
         return self.__optimizer
 
     @optimizer.setter
-    def optimizer(self, value: Optimizer) -> None:
+    def optimizer(self, value: Optional[Optimizer]) -> None:
         self.__optimizer = value
 
     @property
@@ -93,7 +94,7 @@ class HardCheckpoint(Checkpoint):
         return self.__epoch
 
     @epoch.setter
-    def epoch(self, value: Optimizer) -> None:
+    def epoch(self, value: int) -> None:
         self.__epoch = value
 
     @property
@@ -110,7 +111,7 @@ class HardCheckpoint(Checkpoint):
                 'loss': self.loss,
                 'epoch': self.epoch,
                 'model_state_dict': self.__model.state_dict(),
-                'optimizer_state_dict': self.__optimizer.state_dict(),
+                'optimizer_state_dict': self.__optimizer.state_dict() if self.__optimizer is not None else None,
             },
             self.__path
         )
@@ -128,7 +129,8 @@ class HardCheckpoint(Checkpoint):
         loss = checkpoint['loss']
 
         self.__model.load_state_dict(model_state_dict)
-        self.__optimizer.load_state_dict(optimizer_state_dict)
+        if self.__optimizer is not None and optimizer_state_dict is not None:
+            self.__optimizer.load_state_dict(optimizer_state_dict)
         self.__epoch = epoch
         self.__loss = loss
 
@@ -139,7 +141,7 @@ class SoftCheckpoint(Checkpoint):
     def __init__(
             self,
             model: nn.Module,
-            optimizer: Optimizer,
+            optimizer: Optional[Optimizer],
             epoch: int,
             loss: float
     ):
@@ -162,11 +164,11 @@ class SoftCheckpoint(Checkpoint):
         self.__model = value
 
     @property
-    def optimizer(self) -> Optimizer:
+    def optimizer(self) -> Optional[Optimizer]:
         return self.__optimizer
 
     @optimizer.setter
-    def optimizer(self, value: Optimizer) -> None:
+    def optimizer(self, value: Optional[Optimizer]) -> None:
         self.__optimizer = value
 
     @property
@@ -174,7 +176,7 @@ class SoftCheckpoint(Checkpoint):
         return self.__epoch
 
     @epoch.setter
-    def epoch(self, value: Optimizer) -> None:
+    def epoch(self, value: int) -> None:
         self.__epoch = value
 
     @property
@@ -200,7 +202,8 @@ class SoftCheckpoint(Checkpoint):
             self.__model.load_state_dict(self.__cached_model_state_dict)
         if self.__cached_optimizer_state_dict is not None:
             result = True
-            self.__optimizer.load_state_dict(self.__cached_optimizer_state_dict)
+            if self.__optimizer is not None:
+                self.__optimizer.load_state_dict(self.__cached_optimizer_state_dict)
         if self.__cached_epoch is not None:
             result = True
             self.__epoch = self.__cached_epoch
