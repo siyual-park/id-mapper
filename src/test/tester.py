@@ -9,7 +9,7 @@ from pandas import DataFrame
 from torch import nn
 from tqdm import tqdm
 
-from src.data.dataset import CompareDataset
+from src.data.dataloader import CompareDataLoader
 from src.model.comparator import Comparator
 from src.train.checkpoint import HardCheckpoint, SoftCheckpoint
 
@@ -78,7 +78,7 @@ class ComparatorTester(Tester):
             self,
             checkpoint: str or Path,
             model: Comparator,
-            dataset: CompareDataset,
+            dataset: CompareDataLoader,
     ):
 
         super().__init__(

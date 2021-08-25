@@ -8,11 +8,11 @@ from torch import nn
 from torch.optim import Optimizer
 from tqdm import tqdm
 
-from src.data.dataset import CompareDataset
-from src.train.checkpoint import HardCheckpoint, SoftCheckpoint
+from src.data.dataloader import CompareDataLoader
 from src.model.comparator import Comparator
 from src.optimiser.lookahead import Lookahead
 from src.optimiser.radam import RAdam
+from src.train.checkpoint import HardCheckpoint, SoftCheckpoint
 
 
 class Trainer:
@@ -146,8 +146,8 @@ class ComparatorTrainer(Trainer):
             self,
             checkpoint: str or Path,
             model: Comparator,
-            train_dataset: CompareDataset,
-            val_dataset: CompareDataset,
+            train_dataset: CompareDataLoader,
+            val_dataset: CompareDataLoader,
             lr: float,
             k: int,
             alpha: float
