@@ -3,65 +3,8 @@ from torch import nn
 
 from src.common_types import size_2_t
 from src.model.cbam import CBAM
-from src.model.common import Bottleneck, Shortcut, autopad
-from src.model.common import Conv
-
-
-class ResBlock(nn.Module):
-    def __init__(
-            self,
-            channels: int,
-            kernel_size: size_2_t = 3,
-            groups: int = 1,
-            pooling_kernel_size: size_2_t = 2,
-            pooling_stride: size_2_t = 2,
-            pooling_dilation: size_2_t = 1,
-            expansion: float = 0.5,
-            deep: int = 2,
-            dropout_prob: float = 0.0
-    ):
-        super().__init__()
-
-        down_channels = max(int(channels * expansion), 1)
-
-        self.conv = nn.Sequential(*[
-            Conv(
-                in_channels=down_channels,
-                out_channels=down_channels,
-                kernel_size=kernel_size,
-                groups=groups,
-                dropout_prob=dropout_prob
-            ) for _ in range(deep)
-        ])
-
-        self.shortcut_conv = Shortcut(self.conv)
-
-        self.pooling = nn.MaxPool2d(
-            kernel_size=pooling_kernel_size,
-            stride=pooling_stride,
-            dilation=pooling_dilation,
-            padding=autopad(pooling_kernel_size)
-        )
-
-        self.attention = CBAM(
-            gate_channels=down_channels,
-            dropout_prob=dropout_prob
-        )
-
-        self.bottleneck_conv = Bottleneck(
-            in_channels=channels,
-            out_channels=channels,
-            down_channels=down_channels,
-            module=nn.Sequential(
-                self.shortcut_conv,
-                self.pooling,
-                self.attention
-            )
-        )
-
-    def forward(self, x):
-        x_out = self.bottleneck_conv(x)
-        return x_out
+from src.model.common import Conv, Bottleneck
+from src.model.common import Shortcut, autopad
 
 
 class Upscaling(nn.Module):
@@ -101,6 +44,51 @@ class Upscaling(nn.Module):
         return x_out
 
 
+class ResBlock(nn.Module):
+    def __init__(
+            self,
+            channels: int,
+            kernel_size: size_2_t = 3,
+            groups: int = 1,
+            pooling_kernel_size: size_2_t = 2,
+            pooling_stride: size_2_t = 2,
+            pooling_dilation: size_2_t = 1,
+            deep: int = 2,
+            dropout_prob: float = 0.0
+    ):
+        super().__init__()
+
+        self.conv = nn.Sequential(*[
+            Conv(
+                in_channels=channels,
+                out_channels=channels,
+                kernel_size=kernel_size,
+                groups=groups,
+                dropout_prob=dropout_prob
+            ) for _ in range(deep)
+        ])
+
+        self.shortcut_conv = Shortcut(self.conv)
+
+        self.pooling = nn.MaxPool2d(
+            kernel_size=pooling_kernel_size,
+            stride=pooling_stride,
+            dilation=pooling_dilation,
+            padding=autopad(pooling_kernel_size)
+        )
+
+        self.attention = CBAM(
+            gate_channels=channels,
+            dropout_prob=dropout_prob
+        )
+
+    def forward(self, x):
+        x_out = self.shortcut_conv(x)
+        x_out = self.pooling(x_out)
+        x_out = self.attention(x_out)
+
+        return x_out
+
 class Compression(nn.Module):
     def __init__(
             self,
@@ -117,17 +105,23 @@ class Compression(nn.Module):
     ):
         super().__init__()
 
+        down_channels = max(int(channels * expansion), 1)
+
         self.res_block = nn.Sequential(*[
-            ResBlock(
-                channels=channels,
-                kernel_size=kernel_size,
-                groups=groups,
-                pooling_kernel_size=pooling_kernel_size,
-                pooling_stride=pooling_kernel_size,
-                pooling_dilation=pooling_dilation,
-                deep=res_block_deep,
-                expansion=expansion,
-                dropout_prob=dropout_prob,
+            Bottleneck(
+                in_channels=channels,
+                out_channels=channels,
+                down_channels=down_channels,
+                module=ResBlock(
+                    channels=down_channels,
+                    kernel_size=kernel_size,
+                    groups=groups,
+                    pooling_kernel_size=pooling_kernel_size,
+                    pooling_stride=pooling_kernel_size,
+                    pooling_dilation=pooling_dilation,
+                    deep=res_block_deep,
+                    dropout_prob=dropout_prob,
+                )
             ) for _ in range(deep)
         ])
 
