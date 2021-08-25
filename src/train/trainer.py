@@ -9,7 +9,7 @@ from torch.optim import Optimizer
 from tqdm import tqdm
 
 from src.data.dataset import CompareDataset
-from src.model.checkpoint import HardCheckpoint, SoftCheckpoint
+from src.train.checkpoint import HardCheckpoint, SoftCheckpoint
 from src.model.comparator import Comparator
 from src.optimiser.lookahead import Lookahead
 from src.optimiser.radam import RAdam

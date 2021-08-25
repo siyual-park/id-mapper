@@ -7,7 +7,7 @@ from time import time
 from src.data.dataset import InstanceDataset, CompareDataset
 from src.model.comparator import Comparator
 from src.model.tokenizer import Tokenizer
-from src.model.train import ComparatorTrainer
+from src.train.trainer import ComparatorTrainer
 
 if __name__ == '__main__':
     path = Path(os.path.abspath(__file__))
