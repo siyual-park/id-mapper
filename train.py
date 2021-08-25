@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from time import time
 
-from src.data.dataset import InstanceDataset, CompareDataset
+from src.data.dataset import LocalInstanceDataset, CompareDataset
 from src.model.comparator import Comparator
 from src.model.tokenizer import Tokenizer
 from src.train.trainer import ComparatorTrainer
@@ -41,11 +41,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    train_dataset = InstanceDataset(
+    train_dataset = LocalInstanceDataset(
         path=instances_date_path,
         dataset=args.train
     )
-    val_dataset = InstanceDataset(
+    val_dataset = LocalInstanceDataset(
         path=instances_date_path,
         dataset=args.val
     )

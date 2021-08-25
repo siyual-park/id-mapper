@@ -2,7 +2,7 @@ import argparse
 import os
 from pathlib import Path
 
-from src.data.dataset import COCODataset, InstanceDataset
+from src.data.dataset import COCODataset, LocalInstanceDataset
 from src.data.gernerator import BoundingBoxImageGenerator, NoisedImageGenerator
 
 
@@ -30,7 +30,7 @@ def generate(
 
     bounding_box_image_generator.generate(force=force)
 
-    instance_dataset = InstanceDataset(
+    instance_dataset = LocalInstanceDataset(
         path=path,
         dataset=dataset
     )

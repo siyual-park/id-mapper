@@ -1,6 +1,7 @@
+from abc import abstractmethod, ABCMeta
 from pathlib import Path
 from random import shuffle
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import numpy as np
 import torch
@@ -91,7 +92,21 @@ class COCODataset(data.Dataset):
         return annotations
 
 
-class InstanceDataset(data.Dataset):
+class InstanceDataset(data.Dataset, metaclass=ABCMeta):
+    @abstractmethod
+    def shuffle(self):
+        pass
+
+    @abstractmethod
+    def __len__(self):
+        pass
+
+    @abstractmethod
+    def __getitem__(self, idx) -> Tuple[List[Image.Image], Path]:
+        pass
+
+
+class LocalInstanceDataset(InstanceDataset):
     def __init__(
             self,
             path: str or Path,
@@ -123,6 +138,50 @@ class InstanceDataset(data.Dataset):
                 images.append(image)
 
         return images, images_path
+
+
+class CombinedInstanceDataset(InstanceDataset):
+    def __init__(
+            self,
+            datasets: List[InstanceDataset],
+            weights: Optional[List[float]] = None
+    ):
+        super().__init__()
+
+        if weights is None:
+            weights = [1.0] * len(datasets)
+
+        self.__datasets = datasets
+        self.__weights = weights
+
+        self.__data = self.__load_data()
+
+    def __load_data(self) -> List[Tuple[int, int]]:
+        data = []
+        for i, dataset in enumerate(self.__datasets):
+            dataset_size = len(dataset)
+            adjust_dataset_size = int(dataset_size * self.__weights[i])
+
+            indies = list(range(adjust_dataset_size))
+            indies = list(map(lambda index: (i, index), indies))
+
+            data.extend(indies)
+
+        return data
+
+    def shuffle(self):
+        for dataset in self.__datasets:
+            dataset.shuffle()
+        shuffle(self.__data)
+
+    def __len__(self):
+        return len(self.__data)
+
+    def __getitem__(self, index) -> Tuple[List[Image.Image], Path]:
+        dataset_id, data_id = self.__data[index]
+
+        dataset = self.__datasets[dataset_id]
+        return dataset[data_id]
 
 
 class CompareDataset(data.Dataset):

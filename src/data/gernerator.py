@@ -58,7 +58,7 @@ class NoisedImageGenerator:
         self.__format = format
 
     def generate(self, rate: float):
-        print(f'Generate noised images from {self.__dataset.data_path}')
+        print(f'Generate noised images')
 
         for images, images_path in tqdm(self.__dataset):
             if len(images) == 0:
