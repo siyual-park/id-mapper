@@ -63,46 +63,42 @@ class Bottleneck(nn.Module):
             self,
             in_channels: int,
             out_channels: int,
-            kernel_size: size_2_t = 3,
-            groups: int = 1,
-            expansion: float = 0.5,
-            dropout_prob: float = 0.0
+            down_channels: int,
+            module: nn.Module,
     ):
         super().__init__()
 
-        down_sample_channels = max(int(out_channels * expansion), 1)
-
         self.down_sample = Conv(
             in_channels,
-            down_sample_channels,
+            down_channels,
             kernel_size=1
         )
-        self.conv = Conv(
-            down_sample_channels,
-            down_sample_channels,
-            kernel_size=kernel_size,
-            groups=groups,
-            dropout_prob=dropout_prob
-        )
+
+        self.module = module
+
         self.up_sample = Conv(
-            down_sample_channels,
+            down_channels,
             out_channels,
             kernel_size=1
         )
 
     def forward(self, x):
         x_out = self.down_sample(x)
-        x_out = self.conv(x_out)
+        x_out = self.module(x_out)
         x_out = self.up_sample(x_out)
 
         return x_out
 
 
 class Shortcut(nn.Module):
-    def __init__(self):
+    def __init__(self, module: nn.Module):
         super().__init__()
 
-    def forward(self, x, y):
+        self.module = module
+
+    def forward(self, x):
+        y = self.module(x)
+
         if x.size() != y.size():
             return y
 

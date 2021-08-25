@@ -17,18 +17,40 @@ class ResBlock(nn.Module):
             pooling_stride: size_2_t = 2,
             pooling_dilation: size_2_t = 1,
             expansion: float = 0.5,
+            deep: int = 2,
             dropout_prob: float = 0.0
     ):
         super().__init__()
 
-        self.conv = Bottleneck(
+        down_channels = max(int(channels * expansion), 1)
+
+        self.conv = nn.Sequential(*[
+            Conv(
+                in_channels=down_channels,
+                out_channels=down_channels,
+                kernel_size=kernel_size,
+                groups=groups,
+                dropout_prob=dropout_prob
+            ) for _ in range(deep)
+        ])
+
+        self.shortcut_conv = Shortcut(self.conv)
+
+        self.attention = CBAM(
+            gate_channels=down_channels,
+            dropout_prob=dropout_prob
+        )
+
+        self.bottleneck_conv = Bottleneck(
             in_channels=channels,
             out_channels=channels,
-            kernel_size=kernel_size,
-            groups=groups,
-            expansion=expansion,
-            dropout_prob=dropout_prob,
+            down_channels=down_channels,
+            module=nn.Sequential(
+                self.shortcut_conv,
+                self.attention
+            )
         )
+
         self.pooling = nn.MaxPool2d(
             kernel_size=pooling_kernel_size,
             stride=pooling_stride,
@@ -36,11 +58,8 @@ class ResBlock(nn.Module):
             padding=autopad(pooling_kernel_size)
         )
 
-        self.shortcut = Shortcut()
-
     def forward(self, x):
-        x_out = self.conv(x)
-        x_out = self.shortcut(x, x_out)
+        x_out = self.bottleneck_conv(x)
         x_out = self.pooling(x_out)
 
         return x_out
@@ -106,6 +125,7 @@ class Compression(nn.Module):
                 pooling_kernel_size=pooling_kernel_size,
                 pooling_stride=pooling_kernel_size,
                 pooling_dilation=pooling_dilation,
+                deep=deep,
                 expansion=expansion,
                 dropout_prob=dropout_prob,
             ) for _ in range(deep)
