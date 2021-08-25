@@ -35,13 +35,12 @@ class ChannelAttention(nn.Module):
             pool_types = ['avg', 'max']
 
         self.gate_channels = gate_channels
-        self.mlp = nn.Sequential(
-            Flatten(),
+        self.mlp = Flatten(nn.Sequential(
             nn.Linear(gate_channels, int(gate_channels * reduction_ratio)),
             nn.ReLU(),
             nn.Linear(int(gate_channels * reduction_ratio), gate_channels),
             nn.Dropout(dropout_prob)
-        )
+        ))
         self.pool_types = pool_types
 
     def forward(self, x):
