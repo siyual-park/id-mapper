@@ -1,9 +1,11 @@
 import math
 from pathlib import Path
 from time import time
+from typing import Tuple
 
 import numpy as np
 import torch
+from pandas import DataFrame
 from torch import nn
 from tqdm import tqdm
 
@@ -54,24 +56,20 @@ class Tester:
         self._in_memory_checkpoint.save()
         self._checkpoint.load(map_location=self._device)
 
-        start_time = time()
-
-        loss = await self.evaluate()
-
-        end_time = time()
+        loss, pre_time = await self.evaluate()
 
         self._in_memory_checkpoint.load(map_location=self._device)
 
         print(
-            '{:3d} epoch, {:5.2f} loss, {:8.2f} ppl, {:5.2f}s'.format(
+            '{:3d} epoch, {:5.2f} loss, {:8.2f} ppl, {:5.2f}s/it'.format(
                 self._checkpoint.epoch,
                 loss,
                 math.exp(loss),
-                (end_time - start_time),
+                pre_time,
             ),
         )
 
-    async def evaluate(self) -> float:
+    async def evaluate(self) -> Tuple[float, float]:
         raise NotImplemented
 
 
@@ -93,10 +91,12 @@ class ComparatorTester(Tester):
         self.__criterion = nn.BCELoss()
         self.__criterion.to(self._device)
 
-    async def evaluate(self) -> float:
+    async def evaluate(self) -> Tuple[float, float]:
         self.__dataset.shuffle()
 
         total_loss = 0.0
+        total_time = 0.0
+
         confusion_matrix = np.zeros((2, 2))
 
         for keys, queries, expected in tqdm(self.__dataset):
@@ -104,15 +104,21 @@ class ComparatorTester(Tester):
             queries = queries.to(self._device)
             expected = expected.to(self._device)
 
+            start = time()
             actual = self._model(keys, queries)
+            end = time()
 
             loss = self.__criterion(actual, expected)
             total_loss += loss.item()
+            total_time += start - end
 
             confusion_matrix += self.get_confusion_matrix(actual, expected)
 
-        print(confusion_matrix, flush=True)
-        return total_loss / len(self.__dataset)
+        confusion_matrix /= confusion_matrix.sum()
+        print('Confusion matrix')
+        print(DataFrame(confusion_matrix))
+
+        return total_loss / len(self.__dataset), total_time / len(self.__dataset)
 
     def get_confusion_matrix(self, actual: torch.Tensor, expected: torch.Tensor):
         matrix = np.zeros((2, 2))
