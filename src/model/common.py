@@ -111,7 +111,9 @@ class Shortcut(nn.Module):
 
 class Flatten(nn.Module):
     def forward(self, x):
-        return x.view(x.size(0), -1)
+        # x (batch, channel, w, h)
+
+        return x.view(x.size(0), x.size(1), -1)
 
 
 class CosineSimilarly(nn.Module):
