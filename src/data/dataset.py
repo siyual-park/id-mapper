@@ -4,13 +4,10 @@ from random import shuffle
 from typing import List, Tuple, Optional
 
 import numpy as np
-import torch
-import torchvision.transforms as transforms
 from PIL import Image
 from pycocotools import coco
 from torch.utils import data
 
-from src.common_types import size_2_t
 from src.data.utils import get_data_size, represents_int
 
 
