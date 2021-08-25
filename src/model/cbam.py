@@ -131,3 +131,43 @@ class CBAM(nn.Module):
             x_out = x_out * spatial_attention
 
         return x_out
+
+
+class BottleneckCBAM(nn.Module):
+    def __init__(
+            self,
+            gate_channels: int,
+            reduction_ratio: float = 1 / 16,
+            expansion: float = 0.5,
+            pool_types=None,
+            no_spatial: bool = False,
+            dropout_prob: float = 0.0
+    ):
+        super().__init__()
+
+        down_sample_channels = int(gate_channels * expansion)
+
+        self.down_sample = Conv(
+            gate_channels,
+            down_sample_channels,
+            kernel_size=1
+        )
+        self.cbam = CBAM(
+            gate_channels=down_sample_channels,
+            reduction_ratio=reduction_ratio,
+            pool_types=pool_types,
+            no_spatial=no_spatial,
+            dropout_prob=dropout_prob
+        )
+        self.up_sample = Conv(
+            down_sample_channels,
+            gate_channels,
+            kernel_size=1
+        )
+
+    def forward(self, x):
+        x_out = self.down_sample(x)
+        x_out = self.cbam(x_out)
+        x_out = self.up_sample(x_out)
+
+        return x_out

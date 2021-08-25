@@ -1,10 +1,10 @@
 import torch
 from torch import nn
 
-from src.model.cbam import CBAM
+from src.common_types import size_2_t
+from src.model.cbam import CBAM, BottleneckCBAM
 from src.model.common import Bottleneck, Shortcut, autopad
 from src.model.common import Conv
-from src.common_types import size_2_t
 
 
 class ResBlock(nn.Module):
@@ -111,10 +111,11 @@ class Compression(nn.Module):
             ) for _ in range(deep)
         ])
 
-        self.attention = CBAM(
+        self.attention = BottleneckCBAM(
             gate_channels=channels,
             dropout_prob=dropout_prob
         )
+
         self.pooling = nn.MaxPool2d(
             kernel_size=pooling_kernel_size,
             stride=pooling_stride,
