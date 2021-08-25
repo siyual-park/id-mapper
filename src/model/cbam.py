@@ -72,7 +72,9 @@ class ChannelAttention(nn.Module):
                     channel_att_sum = channel_att_sum + channel_att_raw
 
         channel_att_sum = F.sigmoid(channel_att_sum)
-        return channel_att_sum.expand_as(x)
+        channel_att_sum = channel_att_sum.expand_as(x)
+
+        return channel_att_sum
 
 
 class SpatialAttention(nn.Module):
