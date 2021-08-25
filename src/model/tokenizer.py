@@ -89,6 +89,7 @@ class ResBlock(nn.Module):
 
         return x_out
 
+
 class Compression(nn.Module):
     def __init__(
             self,
