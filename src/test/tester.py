@@ -119,7 +119,7 @@ class ComparatorTester(Tester):
 
                     loss = self.__criterion(actual, expected)
                     total_loss += loss.item()
-                    total_time += start - end
+                    total_time += end - start
 
                     confusion_matrix += self.get_confusion_matrix(actual, expected)
                     counter += 1
@@ -128,12 +128,14 @@ class ComparatorTester(Tester):
         print('Confusion matrix')
         print(DataFrame(confusion_matrix))
 
+        accuracy = self.get_accuracy(confusion_matrix)
         precision = self.get_precision(confusion_matrix)
         recall = self.get_precision(confusion_matrix)
         f1 = self.get_f1(precision, recall)
 
         print(
-            '{:5.2f} f1, {:5.2f} precision, {:5.2f} recall;'.format(
+            '{:5.2f} accuracy, {:5.2f} f1, {:5.2f} precision, {:5.2f} recall;'.format(
+                accuracy,
                 f1,
                 precision,
                 recall,
@@ -156,6 +158,9 @@ class ComparatorTester(Tester):
                 matrix[int(actual[i, j]), int(expected[i, j])] += 1
 
         return matrix
+
+    def get_accuracy(self, confusion_matrix) -> float:
+        return np.diag(confusion_matrix).sum() / confusion_matrix.sum()
 
     def get_f1(self, precision, recall):
         return 2 * (recall * precision) / (recall + precision)
