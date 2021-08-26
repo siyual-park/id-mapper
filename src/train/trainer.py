@@ -203,14 +203,15 @@ class ComparatorTrainer(Trainer):
 
         total_loss = 0.0
 
-        for keys, queries, labels in tqdm(self.__val_dataset):
-            keys = keys.to(self._device)
-            queries = queries.to(self._device)
-            labels = labels.to(self._device)
+        with torch.no_grad():
+            for keys, queries, labels in tqdm(self.__val_dataset):
+                keys = keys.to(self._device)
+                queries = queries.to(self._device)
+                labels = labels.to(self._device)
 
-            result = self._model(keys, queries)
+                result = self._model(keys, queries)
 
-            loss = self.__criterion(result, labels)
-            total_loss += loss.item()
+                loss = self.__criterion(result, labels)
+                total_loss += loss.item()
 
         return total_loss / len(self.__val_dataset)
