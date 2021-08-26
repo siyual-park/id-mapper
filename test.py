@@ -27,7 +27,8 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='val2017')
 
     parser.add_argument('--image_size', type=int, default=160)
-    parser.add_argument('--image_num', type=int, default=2)
+    parser.add_argument('--image_set_num', type=int, default=2)
+    parser.add_argument('--max_image_num', type=int, default=4)
     parser.add_argument('--token_size', type=int, default=256)
     parser.add_argument('--deep', type=int, default=1)
     parser.add_argument('--res_block_deep', type=int, default=2)
@@ -42,7 +43,8 @@ if __name__ == '__main__':
     dataset = CompareDataLoader(
         dataset=dataset,
         image_size=args.image_size,
-        image_num=args.image_num
+        image_set_num=args.image_set_num,
+        max_image_num=args.max_image_num,
     )
 
     tokenizer = Tokenizer(

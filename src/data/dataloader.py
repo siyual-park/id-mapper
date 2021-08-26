@@ -1,4 +1,4 @@
-from random import shuffle
+from random import shuffle, sample
 from typing import List, Tuple
 
 import torch
@@ -15,14 +15,16 @@ class CompareDataLoader(data.Dataset):
             self,
             dataset: InstanceDataset,
             image_size: size_2_t,
-            image_num: int = 2
+            image_set_num: int = 2,
+            max_image_num: int = 4,
     ):
         if isinstance(image_size, int):
             image_size = (image_size, image_size)
 
         self.__dataset = dataset
         self.image_size = image_size
-        self.image_num = image_num
+        self.image_set_num = image_set_num
+        self.max_image_num = max_image_num
 
         self.__image_to_tensor = transforms.ToTensor()
         self.__normalize = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
@@ -31,12 +33,14 @@ class CompareDataLoader(data.Dataset):
         self.__dataset.shuffle()
 
     def __len__(self):
-        return len(self.__dataset) // self.image_num
+        return len(self.__dataset) // self.image_set_num
 
     def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         sets = []
-        for i in range(self.image_num):
-            set, _ = self.__dataset[idx * self.image_num + i]
+        for i in range(self.image_set_num):
+            set, _ = self.__dataset[idx * self.image_set_num + i]
+            if len(set) > self.max_image_num:
+                set = list(sample(set, self.max_image_num))
             sets.append(set)
 
         for set in sets:
