@@ -134,8 +134,8 @@ class ComparatorTester(Tester):
     def get_confusion_matrix(self, actual: torch.Tensor, expected: torch.Tensor):
         matrix = np.zeros((2, 2))
 
-        actual = actual.numpy()
-        expected = expected.numpy()
+        actual = actual.cpu().numpy()
+        expected = expected.cpu().numpy()
 
         actual = np.where(actual > 0.5, 1, 0)
 
