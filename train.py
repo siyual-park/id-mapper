@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--checkpoint', type=str, default=str(time()))
+    parser.add_argument('--checkpoint', type=str, default=str(int(time())))
 
     parser.add_argument('--train', type=str, default='train2017')
     parser.add_argument('--val', type=str, default='val2017')
