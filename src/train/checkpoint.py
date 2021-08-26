@@ -189,7 +189,8 @@ class SoftCheckpoint(Checkpoint):
 
     def save(self) -> bool:
         self.__cached_model_state_dict = self.__model.state_dict()
-        self.__cached_optimizer_state_dict = self.__optimizer.state_dict()
+        if self.__optimizer is not None:
+            self.__cached_optimizer_state_dict = self.__optimizer.state_dict()
         self.__cached_epoch = self.epoch
         self.__cached_loss = self.loss
 
