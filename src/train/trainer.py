@@ -168,6 +168,8 @@ class ComparatorTrainer(Trainer):
         self.__criterion.to(self._device)
 
     async def train(self) -> float:
+        self._model.train()
+
         self.__train_dataset.shuffle()
 
         total_loss = 0.0
@@ -199,6 +201,8 @@ class ComparatorTrainer(Trainer):
         return total_loss / len(data)
 
     async def evaluate(self) -> float:
+        self._model.eval()
+
         self.__val_dataset.shuffle()
 
         total_loss = 0.0

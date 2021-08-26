@@ -94,6 +94,7 @@ class ComparatorTester(Tester):
         self.__criterion.to(self._device)
 
     async def evaluate(self) -> Tuple[float, float]:
+        self._model.eval()
         self.__dataset.shuffle()
 
         total_loss = 0.0
