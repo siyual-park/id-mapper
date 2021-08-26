@@ -26,6 +26,8 @@ if __name__ == '__main__':
     parser.add_argument('--checkpoint', type=str, required=True)
     parser.add_argument('--dataset', type=str, default='val2017')
 
+    parser.add_argument('--epochs', type=int, default=40)
+
     parser.add_argument('--image_size', type=int, default=160)
     parser.add_argument('--image_set_num', type=int, default=2)
     parser.add_argument('--max_image_num', type=int, default=4)
@@ -60,6 +62,7 @@ if __name__ == '__main__':
         checkpoint=checkpoints_path.joinpath(args.checkpoint),
         model=compare,
         dataset=dataset,
+        epochs=args.epochs
     )
 
     loop = asyncio.get_event_loop()

@@ -78,12 +78,15 @@ class ComparatorTester(Tester):
             checkpoint: str or Path,
             model: Comparator,
             dataset: CompareDataLoader,
+            epochs: int
     ):
 
         super().__init__(
             checkpoint,
             model
         )
+
+        self.epochs = epochs
 
         self.__dataset = dataset
 
@@ -98,20 +101,23 @@ class ComparatorTester(Tester):
 
         confusion_matrix = np.zeros((2, 2))
 
-        for keys, queries, expected in tqdm(self.__dataset):
-            keys = keys.to(self._device)
-            queries = queries.to(self._device)
-            expected = expected.to(self._device)
+        for _ in range(self.epochs):
+            self.__dataset.shuffle()
 
-            start = time()
-            actual = self._model(keys, queries)
-            end = time()
+            for keys, queries, expected in tqdm(self.__dataset):
+                keys = keys.to(self._device)
+                queries = queries.to(self._device)
+                expected = expected.to(self._device)
 
-            loss = self.__criterion(actual, expected)
-            total_loss += loss.item()
-            total_time += start - end
+                start = time()
+                actual = self._model(keys, queries)
+                end = time()
 
-            confusion_matrix += self.get_confusion_matrix(actual, expected)
+                loss = self.__criterion(actual, expected)
+                total_loss += loss.item()
+                total_time += start - end
+
+                confusion_matrix += self.get_confusion_matrix(actual, expected)
 
         confusion_matrix /= confusion_matrix.sum()
         print('Confusion matrix')
