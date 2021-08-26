@@ -101,6 +101,7 @@ class ComparatorTester(Tester):
 
         confusion_matrix = np.zeros((2, 2))
 
+        counter = 0
         for _ in range(self.epochs):
             self.__dataset.shuffle()
 
@@ -118,6 +119,7 @@ class ComparatorTester(Tester):
                 total_time += start - end
 
                 confusion_matrix += self.get_confusion_matrix(actual, expected)
+                counter += 1
 
         confusion_matrix /= confusion_matrix.sum()
         print('Confusion matrix')
@@ -135,7 +137,7 @@ class ComparatorTester(Tester):
             ),
         )
 
-        return total_loss / len(self.__dataset), total_time / len(self.__dataset)
+        return total_loss / counter, total_time / counter
 
     def get_confusion_matrix(self, actual: torch.Tensor, expected: torch.Tensor):
         matrix = np.zeros((2, 2))
