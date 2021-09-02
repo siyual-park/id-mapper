@@ -134,7 +134,7 @@ class ComparatorTester(Tester):
         f1 = self.get_f1(precision, recall)
 
         print(
-            '{:5.2f} accuracy, {:5.2f} f1, {:5.2f} precision, {:5.2f} recall;'.format(
+            '{:5.2f} accuracy, {:5.2f} f1, {:5.2f} precision, {:5.2f} recall'.format(
                 accuracy,
                 f1,
                 precision,
