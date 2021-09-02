@@ -1,5 +1,5 @@
 #!/bin/sh
 
 
-python ./download
-python ./generate
+python download.py
+python generate.py

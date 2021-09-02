@@ -1,5 +1,6 @@
 #!/bin/sh
 
+$NOW=`date -d "now" +%s`
 
-python ./train --checkpoint=$(date -d "now" +%s)
-python ./test --checkpoint=$(date -d "now" +%s)
+python train.py --checkpoint=$NOW
+python test.py --checkpoint=$NOW
